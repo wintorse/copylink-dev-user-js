@@ -13,7 +13,11 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "baseUrl": "./",
+    "paths": {
+      "@copylink-dev/*": ["src/copylink-dev/src/*"]
+    },
 
     /* Linting */
     "strict": true,

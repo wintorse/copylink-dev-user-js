@@ -1,18 +1,38 @@
-import react from '@vitejs/plugin-react-swc';
-import { defineConfig } from 'vite';
-import monkey from 'vite-plugin-monkey';
+import path from "node:path";
+import { defineConfig } from "vite";
+import monkey from "vite-plugin-monkey";
+import pkg from "./package.json";
 
-// https://vitejs.dev/config/
+const version = pkg.version;
+
 export default defineConfig({
   plugins: [
-    react(),
     monkey({
-      entry: 'src/main.tsx',
+      entry: "src/userscript/entry.ts",
+      build: {
+        fileName: `copylink-dev.user.js`,
+      },
       userscript: {
-        icon: 'https://vitejs.dev/logo.svg',
-        namespace: 'npm/vite-plugin-monkey',
-        match: ['https://www.google.com/'],
+        name: "copylink.dev-test",
+        namespace: "https://github.com/wintorse/copylink-dev-user-js",
+        version,
+        description: {
+          en: "Copy links with shortcuts. On supported sites, create Slack emoji-enhanced links.",
+          ja: "ショートカットでリンクをコピー。対応サイトではSlack絵文字つきリンクも生成します。",
+          "zh-CN":
+            "使用快捷键复制链接。在支持的网站上创建带 Slack 表情符号的链接。",
+        },
+        author: "wintorse",
+        supportURL: "https://github.com/wintorse/copylink-dev/issues",
+        match: ["*://*/*"],
+        grant: ["GM.getValue", "GM.setValue"],
+        license: "MIT",
       },
     }),
   ],
+  resolve: {
+    alias: {
+      "@copylink-dev": path.resolve(__dirname, "src/copylink-dev/src"),
+    },
+  },
 });
