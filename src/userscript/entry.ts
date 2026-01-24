@@ -4,72 +4,11 @@ import type { Command } from "@copylink-dev/types/types";
 import { getMessage } from "./i18n";
 import { showToast, type ToastOptions } from "./toast";
 import { getEmojiName } from "./emoji";
-import { initSettingsUI, type SettingsController } from "./settings-ui";
-import { registerShortcuts, type ShortcutMap } from "./shortcuts";
-
-export const isMac = /Mac/.test(navigator.userAgent);
-
-const defaultShortcuts: ShortcutMap = isMac
-  ? {
-      "copy-link": {
-        key: "l",
-        ctrl: true,
-        shift: false,
-        alt: false,
-        meta: false,
-      },
-      "copy-link-for-slack": {
-        key: "l",
-        ctrl: true,
-        shift: true,
-        alt: false,
-        meta: false,
-      },
-      "copy-title": {
-        key: "t",
-        ctrl: true,
-        shift: false,
-        alt: false,
-        meta: false,
-      },
-      "copy-google-sheets-range": {
-        key: "r",
-        ctrl: true,
-        shift: false,
-        alt: false,
-        meta: false,
-      },
-    }
-  : {
-      "copy-link": {
-        key: "l",
-        ctrl: false,
-        shift: false,
-        alt: true,
-        meta: false,
-      },
-      "copy-link-for-slack": {
-        key: "l",
-        ctrl: false,
-        shift: true,
-        alt: true,
-        meta: false,
-      },
-      "copy-title": {
-        key: "t",
-        ctrl: false,
-        shift: false,
-        alt: true,
-        meta: false,
-      },
-      "copy-google-sheets-range": {
-        key: "r",
-        ctrl: false,
-        shift: false,
-        alt: true,
-        meta: false,
-      },
-    };
+import { initSettingsUI } from "./settings-ui";
+import { registerShortcuts } from "./shortcuts";
+import { defaultShortcuts } from "./constants";
+import { copyToClipboard } from "./utils";
+import type { SettingsController } from "./types";
 
 let settingsController: SettingsController | null = null;
 let shortcutControllerRef: { refresh: () => Promise<void> } | null = null;
@@ -88,50 +27,6 @@ const toastWithSettings = (): ToastOptions => ({
     ensureSettingsController().then((controller) => controller.show());
   },
 });
-
-const copyToClipboard = async (
-  text: string,
-  successMessage: string,
-  failureMessage: string,
-  html?: string,
-  toastOptions?: ToastOptions,
-  fallbackElement?: HTMLElement,
-) => {
-  try {
-    if (navigator.clipboard) {
-      if (html) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/plain": new Blob([text], { type: "text/plain" }),
-            "text/html": new Blob([html], { type: "text/html" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-    } else if (fallbackElement) {
-      document.body.appendChild(fallbackElement);
-      const range = document.createRange();
-      range.selectNode(fallbackElement);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
-        document.execCommand("copy");
-        selection.removeAllRanges();
-      }
-      document.body.removeChild(fallbackElement);
-    } else {
-      throw new Error("Clipboard not available");
-    }
-    showToast(successMessage, toastOptions);
-    return true;
-  } catch (error) {
-    console.warn(error);
-    showToast(failureMessage, toastOptions);
-    return false;
-  }
-};
 
 const copyHandlers: Record<Command, () => Promise<void>> = {
   "copy-link": async () => {

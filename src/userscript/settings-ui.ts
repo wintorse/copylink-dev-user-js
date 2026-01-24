@@ -15,28 +15,15 @@ import {
   updateShortcut,
 } from "./cache";
 import { showToast } from "./toast";
-import { isMac } from "./entry";
+import { isMac } from "./constants";
+import type { Shortcut, ShortcutMap, SettingsController } from "./types";
+export type { SettingsController } from "./types";
 
 const SettingsHostId = "copylink-dev-settings-host";
 const SettingsPanelId = "copylink-dev-settings";
 const SettingsButtonId = "copylink-dev-settings-toggle";
 
-type Shortcut = {
-  key: string;
-  ctrl: boolean;
-  shift: boolean;
-  alt: boolean;
-  meta: boolean;
-};
-
-type DefaultsMap = Record<string, Shortcut>;
-
-export type SettingsController = {
-  show: () => void;
-  hide: () => void;
-  toggle: () => void;
-  isOpen: () => boolean;
-};
+type DefaultsMap = ShortcutMap;
 
 const shortcutCommands: { key: string; label: string }[] = [
   { key: "copy-link", label: getMessage("shortcutCopyLink") },

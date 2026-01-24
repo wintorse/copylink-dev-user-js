@@ -1,14 +1,6 @@
 import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import type { Command } from "@copylink-dev/types/types";
-
-export type Shortcut = {
-  key: string;
-  ctrl: boolean;
-  shift: boolean;
-  alt: boolean;
-  meta: boolean;
-};
-export type ShortcutMap = Record<string, Shortcut>;
+import type { Shortcut, ShortcutMap } from "./types";
 
 const matchesShortcut = (event: KeyboardEvent, shortcut: Shortcut) => {
   const normalizedKey = shortcut.key.toLowerCase();
