@@ -4,6 +4,7 @@ import {
   EMOJI_KEYS,
 } from "@copylink-dev/types/constants";
 import type { CustomRegexes, EmojiNameRecord } from "@copylink-dev/types/types";
+import { normalizeEmojiValue } from "@copylink-dev/shared/popup/emojiSettings";
 import { getMessage } from "./i18n";
 import {
   getCachedCustomRegexes,
@@ -269,11 +270,11 @@ const saveSettings = async (defaults: DefaultsMap, onSaved?: () => void) => {
 
   for (const input of emojiInputs) {
     const key = input.dataset.emojiKey as keyof EmojiNameRecord;
-    await updateEmojiName(
-      key,
-      (input.value as EmojiNameRecord[keyof EmojiNameRecord]) ||
-        DEFAULT_EMOJI_NAMES[key],
+    const normalized = normalizeEmojiValue(
+      input.value,
+      DEFAULT_EMOJI_NAMES[key],
     );
+    await updateEmojiName(key, normalized);
   }
 
   for (const input of regexInputs) {

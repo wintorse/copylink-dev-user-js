@@ -31,8 +31,15 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      "@copylink-dev": path.resolve(__dirname, "src/copylink-dev/src"),
-    },
+    alias: [
+      {
+        find: "@copylink-dev/public",
+        replacement: path.resolve(__dirname, "src/copylink-dev/public"),
+      },
+      {
+        find: "@copylink-dev",
+        replacement: path.resolve(__dirname, "src/copylink-dev/src"),
+      },
+    ],
   },
 });
