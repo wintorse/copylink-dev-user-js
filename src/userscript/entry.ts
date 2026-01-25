@@ -6,7 +6,7 @@ import {
 } from "@copylink-dev/shared/clipboard/copyTextLinkCore";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 import type { Command } from "@copylink-dev/types/types";
-import { getMessage } from "./i18n";
+import { getMessage, type MessageId } from "./i18n";
 import { showToast, type ToastOptions } from "./toast";
 import { getEmojiName } from "./emoji";
 import { initSettingsUI } from "./settings-ui";
@@ -33,7 +33,7 @@ const toastWithSettings = (): ToastOptions => ({
 });
 
 const buildDeps = (): CopyTextLinkDeps => ({
-  t: getMessage,
+  t: (key: string) => getMessage(key as MessageId),
   getEmojiName,
   getFormattedTitle,
   getGoogleSheetsRangeInfo,
