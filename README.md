@@ -1,3 +1,5 @@
+[日本語版 README はこちら](./README-ja.md)
+
 # copylink-dev.user.js （UserScript）
 
 This repository provides a UserScript version of [copylink-dev](https://github.com/wintorse/copylink-dev) that can be used in browsers where Chrome extensions are not available (e.g., Safari). It also includes the browser extension source as a git submodule.
