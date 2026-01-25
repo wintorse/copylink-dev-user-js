@@ -13,7 +13,7 @@ export default defineConfig({
         fileName: `copylink-dev.user.js`,
       },
       userscript: {
-        name: "copylink.dev-test",
+        name: "copylink.dev",
         namespace: "https://github.com/wintorse/copylink-dev-user-js",
         version,
         description: {
@@ -23,7 +23,7 @@ export default defineConfig({
             "使用快捷键复制链接。在支持的网站上创建带 Slack 表情符号的链接。",
         },
         author: "wintorse",
-        supportURL: "https://github.com/wintorse/copylink-dev/issues",
+        supportURL: "https://github.com/wintorse/copylink-dev-user-js/issues",
         match: ["*://*/*"],
         grant: ["GM.getValue", "GM.setValue"],
         license: "MIT",
