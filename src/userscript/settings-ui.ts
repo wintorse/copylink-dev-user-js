@@ -121,6 +121,33 @@ const updateVisibilityState = () => {
   isPanelVisible = panelElement.style.display !== "none";
 };
 
+const createText = (text: string) => document.createTextNode(text);
+
+const createElement = <K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  options: {
+    className?: string;
+    text?: string;
+    id?: string;
+    type?: string;
+  } = {},
+): HTMLElementTagNameMap[K] => {
+  const el = document.createElement(tag);
+  if (options.className) el.className = options.className;
+  if (options.text !== undefined) el.textContent = options.text;
+  if (options.id) el.id = options.id;
+  if (options.type && "type" in el) {
+    (el as HTMLInputElement).type = options.type;
+  }
+  return el;
+};
+
+const appendChildren = (parent: Node, ...children: Array<Node | null>) => {
+  children.forEach((child) => {
+    if (child) parent.appendChild(child);
+  });
+};
+
 const formatShortcut = (shortcut: Shortcut) => {
   const parts: string[] = [];
   if (shortcut.ctrl) parts.push("Ctrl");
@@ -137,17 +164,16 @@ const getEffectiveShortcut = (commandKey: string) => {
 };
 
 const createShortcutInput = (commandKey: string, labelText: string) => {
-  const wrapper = document.createElement("div");
-  wrapper.className = "shortcut-row";
-
-  const label = document.createElement("label");
-  label.className = "shortcut-label";
-  label.textContent = labelText;
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.className = "shortcut-input";
-  input.id = `shortcut-${commandKey}`;
+  const wrapper = createElement("div", { className: "shortcut-row" });
+  const label = createElement("label", {
+    className: "shortcut-label",
+    text: labelText,
+  });
+  const input = createElement("input", {
+    className: "shortcut-input",
+    id: `shortcut-${commandKey}`,
+    type: "text",
+  }) as HTMLInputElement;
   input.dataset.commandKey = commandKey;
   input.readOnly = true;
 
@@ -183,68 +209,62 @@ const createShortcutInput = (commandKey: string, labelText: string) => {
     input.dataset.shortcut = JSON.stringify(shortcut);
   });
 
-  label.appendChild(input);
-  wrapper.appendChild(label);
+  appendChildren(label, input);
+  appendChildren(wrapper, label);
 
   return wrapper;
 };
 
 const createEmojiFields = () => {
-  const section = document.createElement("div");
-  section.className = "section";
+  const section = createElement("div", { className: "section" });
 
   slackFields.forEach((field, index) => {
-    const label = document.createElement("label");
-    label.textContent = field.label;
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.id = field.id;
+    const label = createElement("label", { text: field.label });
+    const input = createElement("input", {
+      id: field.id,
+      type: "text",
+    }) as HTMLInputElement;
     input.placeholder =
       index === 0 ? getMessage("emojiPlaceholder") : field.placeholder;
     input.dataset.emojiKey = field.id;
 
-    label.appendChild(input);
-    section.appendChild(label);
+    appendChildren(label, input);
+    appendChildren(section, label);
   });
 
   return section;
 };
 
 const createCustomSitesFields = () => {
-  const section = document.createElement("div");
-  section.className = "section";
+  const section = createElement("div", { className: "section" });
 
   for (let i = 1; i <= 5; i++) {
-    const pair = document.createElement("div");
-    pair.className = "custom-pair";
-
-    const regexLabel = document.createElement("label");
-    regexLabel.textContent = getMessage("customWebsiteRegex", {
-      num: i.toString(),
+    const pair = createElement("div", { className: "custom-pair" });
+    const regexLabel = createElement("label", {
+      text: getMessage("customWebsiteRegex", { num: i.toString() }),
     });
-    const regexInput = document.createElement("input");
-    regexInput.type = "text";
-    regexInput.id = `customRegex${i}`;
+    const regexInput = createElement("input", {
+      id: `customRegex${i}`,
+      type: "text",
+    }) as HTMLInputElement;
     regexInput.placeholder = "www\\.example\\.com";
     regexInput.dataset.regexKey = CUSTOM_REGEX_KEYS[i - 1];
-    regexLabel.appendChild(regexInput);
+    appendChildren(regexLabel, regexInput);
 
-    const emojiLabel = document.createElement("label");
-    emojiLabel.textContent = getMessage("customWebsiteEmoji", {
-      num: i.toString(),
+    const emojiLabel = createElement("label", {
+      text: getMessage("customWebsiteEmoji", { num: i.toString() }),
     });
-    const emojiInput = document.createElement("input");
-    emojiInput.type = "text";
-    emojiInput.id = `customWebsite${i}`;
+    const emojiInput = createElement("input", {
+      id: `customWebsite${i}`,
+      type: "text",
+    }) as HTMLInputElement;
     emojiInput.placeholder =
       i === 1 ? getMessage("emojiPlaceholder") : "絵文字";
     emojiInput.dataset.emojiKey = `customWebsite${i}`;
-    emojiLabel.appendChild(emojiInput);
+    appendChildren(emojiLabel, emojiInput);
 
-    pair.appendChild(regexLabel);
-    pair.appendChild(emojiLabel);
-    section.appendChild(pair);
+    appendChildren(pair, regexLabel, emojiLabel);
+    appendChildren(section, pair);
   }
 
   return section;
@@ -257,94 +277,96 @@ const createSettingsPanel = () => {
     shadow.removeChild(shadow.firstChild);
   }
 
-  const style = document.createElement("style");
+  const style = createElement("style");
   style.textContent = settingsStyleText;
   shadow.appendChild(style);
 
-  const panel = document.createElement("div");
-  panel.id = SettingsPanelId;
+  const panel = createElement("div", { id: SettingsPanelId });
 
-  const header = document.createElement("h2");
-  header.textContent = getMessage("settingsTitle");
-  panel.appendChild(header);
+  const header = createElement("h2", { text: getMessage("settingsTitle") });
+  appendChildren(panel, header);
 
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "close-btn";
-  closeBtn.textContent = "×";
+  const closeBtn = createElement("button", {
+    className: "close-btn",
+    text: "×",
+  });
   closeBtn.addEventListener("click", () => hidePanel());
-  panel.appendChild(closeBtn);
+  appendChildren(panel, closeBtn);
 
-  const settingsContent = document.createElement("div");
-  settingsContent.className = "settings-content";
+  const settingsContent = createElement("div", {
+    className: "settings-content",
+  });
 
-  const shortcutHeader = document.createElement("h3");
-  shortcutHeader.textContent = getMessage("shortcutSettings");
-  settingsContent.appendChild(shortcutHeader);
+  const shortcutHeader = createElement("h3", {
+    text: getMessage("shortcutSettings"),
+  });
+  appendChildren(settingsContent, shortcutHeader);
 
-  const shortcutSection = document.createElement("div");
-  shortcutSection.className = "shortcut-section";
+  const shortcutSection = createElement("div", {
+    className: "shortcut-section",
+  });
   shortcutCommands.forEach((shortcut) => {
     const row = createShortcutInput(shortcut.key, shortcut.label);
-    shortcutSection.appendChild(row);
+    appendChildren(shortcutSection, row);
   });
-  settingsContent.appendChild(shortcutSection);
+  appendChildren(settingsContent, shortcutSection);
 
-  const slackHeader = document.createElement("h3");
-  slackHeader.textContent = getMessage("slackEmojiSettings");
-  settingsContent.appendChild(slackHeader);
-  settingsContent.appendChild(createEmojiFields());
+  const slackHeader = createElement("h3", {
+    text: getMessage("slackEmojiSettings"),
+  });
+  appendChildren(settingsContent, slackHeader, createEmojiFields());
 
-  const customHeader = document.createElement("h3");
-  customHeader.textContent = getMessage("customWebsites");
-  settingsContent.appendChild(customHeader);
+  const customHeader = createElement("h3", {
+    text: getMessage("customWebsites"),
+  });
+  appendChildren(settingsContent, customHeader);
 
-  const customDescription = document.createElement("p");
-  customDescription.textContent = getMessage("customWebsitesDescription");
-  settingsContent.appendChild(customDescription);
+  const customDescription = createElement("p", {
+    text: getMessage("customWebsitesDescription"),
+  });
+  appendChildren(settingsContent, customDescription);
 
-  settingsContent.appendChild(createCustomSitesFields());
+  appendChildren(settingsContent, createCustomSitesFields());
 
-  const repoLinkSection = document.createElement("div");
-  repoLinkSection.className = "repo-link-section";
-  const repoLinkWrapper = document.createElement("p");
-  repoLinkWrapper.appendChild(
-    document.createTextNode(getMessage("sourceCodeOnGitHub") + " "),
-  );
-  const repoLink = document.createElement("a");
-  repoLink.className = "repo-link";
+  const repoLinkSection = createElement("div", {
+    className: "repo-link-section",
+  });
+  const repoLinkWrapper = createElement("p", {
+    className: "repo-link-wrapper",
+  });
+  const repoLink = createElement("a", { className: "repo-link" });
   repoLink.href = "https://github.com/wintorse/copylink-dev-user-js";
   repoLink.textContent = "GitHub";
   repoLink.target = "_blank";
-  repoLinkWrapper.appendChild(repoLink);
-  repoLinkWrapper.appendChild(
-    document.createTextNode(getMessage("sourceCodeSuffix")),
+  appendChildren(
+    repoLinkWrapper,
+    createText(getMessage("sourceCodeOnGitHub") + " "),
+    repoLink,
+    createText(getMessage("sourceCodeSuffix")),
   );
-  repoLinkSection.appendChild(repoLinkWrapper);
-
-  const repoLinkNote = document.createElement("p");
-  repoLinkNote.appendChild(
-    document.createTextNode(getMessage("gistUpdatePrefix")),
-  );
-  const gistLink = document.createElement("a");
-  gistLink.className = "gist-inline-link";
+  const repoLinkNote = createElement("p", { className: "repo-link-note" });
+  const gistLink = createElement("a", { className: "gist-inline-link" });
   gistLink.href =
     "https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js";
   gistLink.textContent = "Gist";
   gistLink.target = "_blank";
-  repoLinkNote.appendChild(gistLink);
-  repoLinkNote.appendChild(
-    document.createTextNode(getMessage("gistUpdateSuffix")),
+  appendChildren(
+    repoLinkNote,
+    createText(getMessage("gistUpdatePrefix")),
+    gistLink,
+    createText(getMessage("gistUpdateSuffix")),
   );
-  repoLinkSection.appendChild(repoLinkNote);
-  settingsContent.appendChild(repoLinkSection);
+  appendChildren(repoLinkSection, repoLinkWrapper, repoLinkNote);
+  appendChildren(settingsContent, repoLinkSection);
 
-  panel.appendChild(settingsContent);
+  appendChildren(panel, settingsContent);
 
-  const saveBtn = document.createElement("button");
-  saveBtn.className = "save-btn";
-  saveBtn.textContent = getMessage("saveSettings");
+  const saveBtn = createElement("button", {
+    className: "save-btn",
+    text: getMessage("saveSettings"),
+  });
   saveBtn.addEventListener("click", () => saveSettings());
-  panel.appendChild(saveBtn);
+  appendChildren(panel, saveBtn);
 
   shadow.appendChild(panel);
   panelElement = panel;
