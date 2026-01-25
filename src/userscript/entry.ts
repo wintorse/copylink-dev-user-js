@@ -1,5 +1,5 @@
-import { getFormattedTitle } from "@copylink-dev/scripts/getFormattedTitle";
-import { getGoogleSheetsRangeInfo } from "@copylink-dev/scripts/getGoogleSheetsRangeLink";
+import { getFormattedTitle } from "@copylink-dev/shared/getFormattedTitle";
+import { getGoogleSheetsRangeInfo } from "@copylink-dev/shared/getGoogleSheetsRangeLink";
 import {
   copyTextLinkCore,
   type CopyTextLinkDeps,

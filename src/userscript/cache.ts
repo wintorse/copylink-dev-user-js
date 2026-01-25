@@ -1,7 +1,7 @@
 import {
   CUSTOM_REGEX_KEYS,
   DEFAULT_EMOJI_NAMES,
-} from "@copylink-dev/types/constants";
+} from "@copylink-dev/shared/constants";
 import type {
   CustomRegexes,
   EmojiName,

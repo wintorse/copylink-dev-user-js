@@ -2,7 +2,7 @@ import {
   CUSTOM_REGEX_KEYS,
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
-} from "@copylink-dev/types/constants";
+} from "@copylink-dev/shared/constants";
 import type { CustomRegexes, EmojiNameRecord } from "@copylink-dev/types/types";
 import { normalizeEmojiValue } from "@copylink-dev/shared/popup/emojiSettings";
 import { getMessage } from "./i18n";
