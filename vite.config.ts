@@ -24,6 +24,10 @@ export default defineConfig({
         },
         author: "wintorse",
         supportURL: "https://github.com/wintorse/copylink-dev-user-js/issues",
+        updateURL:
+          "https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js",
+        downloadURL:
+          "https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js",
         match: ["*://*/*"],
         grant: ["GM.getValue", "GM.setValue"],
         license: "MIT",
