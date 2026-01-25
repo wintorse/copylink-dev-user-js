@@ -158,22 +158,14 @@
   text-align: center;
 }
 
-.repo-link,
-.gist-inline-link {
+.repo-link {
   color: var(--primary-color);
   font-weight: bold;
   text-decoration: none;
 }
 
-.repo-link:hover,
-.gist-inline-link:hover {
+.repo-link:hover {
   text-decoration: underline;
-}
-
-.repo-link-note {
-  margin: 0;
-  font-size: 0.9em;
-  color: var(--text-color);
 }
 
 .settings-content::-webkit-scrollbar-thumb {

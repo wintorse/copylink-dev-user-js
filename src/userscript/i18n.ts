@@ -44,8 +44,6 @@ export const i18nMessages = {
     reDoc: "ReDoc",
     sourceCodeOnGitHub: "ソースコード：",
     sourceCodeSuffix: "",
-    gistUpdatePrefix: "更新するには ",
-    gistUpdateSuffix: " を開いてください",
   },
   en: {
     copyTitleSuccess: "Title copied to clipboard",
@@ -88,8 +86,6 @@ export const i18nMessages = {
     reDoc: "ReDoc",
     sourceCodeOnGitHub: "Source code is available on",
     sourceCodeSuffix: ".",
-    gistUpdatePrefix: "Open the ",
-    gistUpdateSuffix: " to update.",
   },
   "zh-CN": {
     copyTitleSuccess: "标题已复制到剪贴板",
@@ -130,8 +126,6 @@ export const i18nMessages = {
     reDoc: "ReDoc",
     sourceCodeOnGitHub: "源代码：",
     sourceCodeSuffix: "",
-    gistUpdatePrefix: "请打开 ",
-    gistUpdateSuffix: " 以更新。",
   },
 } as const;
 

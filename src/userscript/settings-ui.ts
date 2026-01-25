@@ -344,19 +344,7 @@ const createSettingsPanel = () => {
     repoLink,
     createText(getMessage("sourceCodeSuffix")),
   );
-  const repoLinkNote = createElement("p", { className: "repo-link-note" });
-  const gistLink = createElement("a", { className: "gist-inline-link" });
-  gistLink.href =
-    "https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js";
-  gistLink.textContent = "Gist";
-  gistLink.target = "_blank";
-  appendChildren(
-    repoLinkNote,
-    createText(getMessage("gistUpdatePrefix")),
-    gistLink,
-    createText(getMessage("gistUpdateSuffix")),
-  );
-  appendChildren(repoLinkSection, repoLinkWrapper, repoLinkNote);
+  appendChildren(repoLinkSection, repoLinkWrapper);
   appendChildren(settingsContent, repoLinkSection);
 
   appendChildren(panel, settingsContent);
