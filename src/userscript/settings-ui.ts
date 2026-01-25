@@ -306,19 +306,30 @@ const createSettingsPanel = () => {
 
   const repoLinkSection = document.createElement("div");
   repoLinkSection.className = "repo-link-section";
-  const repoLinkWrapper = document.createElement("span");
-  repoLinkWrapper.className = "repo-link-wrapper";
-  const repoLinkText = document.createElement("p");
-  repoLinkText.textContent = "source code is available on";
-  repoLinkWrapper.appendChild(repoLinkText);
+  const repoLinkWrapper = document.createElement("p");
+  repoLinkWrapper.appendChild(
+    document.createTextNode("Source code is available on "),
+  );
   const repoLink = document.createElement("a");
-  repoLink.className = "repo-link";
+  repoLink.className = "inline-link";
   repoLink.href = "https://github.com/wintorse/copylink-dev-user-js";
   repoLink.textContent = "GitHub";
   repoLink.target = "_blank";
   repoLinkWrapper.appendChild(repoLink);
+  repoLinkWrapper.appendChild(document.createTextNode("."));
   repoLinkSection.appendChild(repoLinkWrapper);
 
+  const repoLinkNote = document.createElement("p");
+  repoLinkNote.appendChild(document.createTextNode("Open the "));
+  const gistLink = document.createElement("a");
+  gistLink.className = "inline-link";
+  gistLink.href =
+    "https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js";
+  gistLink.textContent = "Gist";
+  gistLink.target = "_blank";
+  repoLinkNote.appendChild(gistLink);
+  repoLinkNote.appendChild(document.createTextNode(" to update."));
+  repoLinkSection.appendChild(repoLinkNote);
   settingsContent.appendChild(repoLinkSection);
 
   panel.appendChild(settingsContent);

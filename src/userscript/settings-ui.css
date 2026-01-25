@@ -51,7 +51,8 @@
 
 #copylink-dev-settings p {
   line-height: 1.4;
-  font-size: 0.9em;
+  font-size: 1em;
+  margin-top: 4px;
 }
 
 .close-btn {
@@ -142,30 +143,32 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   margin-top: 14px;
 }
 
+.custom-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .repo-link-section {
-  margin: 10px 20px 5px;
+  padding: 16px 20px 8px;
   text-align: center;
 }
 
-.repo-link-wrapper {
-  display: flex;
-  gap: 0.2rem;
-  justify-content: center;
-  align-items: baseline;
-}
-
-.repo-link {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 0.9em;
-}
-
 .repo-link:hover {
+  text-decoration: underline;
+}
+
+.inline-link {
+  color: var(--primary-color);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.gist-inline-link:hover {
   text-decoration: underline;
 }
 
