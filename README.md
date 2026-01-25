@@ -25,15 +25,29 @@ The latest release is automatically mirrored to the Gist below by a workflow:
 1. Install Tampermonkey from the Chrome Web Store.
 2. Open Tampermonkey's details under `chrome://extensions/` and enable **Allow userscripts**.
 3. Visit https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js.
-4. Follow the prompts to install the userscript.
+4. Follow the on-screen instructions to install the userscript.
 
 ### Safari
 
 1. Install [Userscripts](https://apps.apple.com/jp/app/userscripts/id1463298887) from the App Store.
-2. Click the Userscripts icon in Safari's tab bar and select **Open Extension Page**.
-3. Click the **+** button, choose **New Remote**, and enter
+2. Click the Userscripts icon in Safari's tab bar and select "Open Extension Page".
+3. Click the **+** button, choose "New Remote", and enter
 	`https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js`.
 4. Click **Save** in the bottom-right corner.
+
+## Updates
+
+### Chromium-based browsers
+
+1. Click the Tampermonkey icon in your browser.
+2. In the pop-up menu, select "Utilities" and then click "Check for userscript updates".
+3. Follow the on-screen instructions to update.
+
+### Safari
+
+1. Click the icon displayed in Safari's tab bar and select "Open Extension Page".
+2. Select copylink.dev (proceed to the next step if already selected).
+3. Press the refresh button located in the upper right corner of the screen.
 
 ## Clone
 

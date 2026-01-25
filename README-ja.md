@@ -31,8 +31,22 @@
 
 1. App Store で [Userscripts](https://apps.apple.com/jp/app/userscripts/id1463298887) をインストールする。
 2. Safari のタブバーに表示されるアイコンをクリックし、"Open Extension Page" をクリックする。
-3. 「+」ボタン → 「New Remote」を選択し、次の URL を入力する: `https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js`
+3. 「+」ボタン → "New Remote" を選択し、次の URL を入力する: `https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js`
 4. 右下の "Save" をクリックする。
+
+## 更新方法
+
+### Chromium 系ブラウザ
+
+1. ブラウザで Tampermonkey のアイコンをクリックする。
+2. 表示されたポップアップで「ユーティリティ」を選択し、「UserScript の更新を確認」をクリックする。
+3. 表示に従い更新する。
+
+### Safari
+
+1. Safari のタブバーに表示されているアイコンをクリックし、"Open Extension Page" をクリックする。
+2. copylink.dev を選択する（すでに選択されている場合は次へ）
+3. 画面右上の更新ボタンを押下する。
 
 ## クローン
 
