@@ -509,7 +509,7 @@ const saveSettings = async () => {
   }
 
   await refreshSettingsCache();
-  showToast(getMessage("settingsSaved"));
+  await showToast(getMessage("settingsSaved"));
   hidePanel();
   onSavedRef?.();
 };
