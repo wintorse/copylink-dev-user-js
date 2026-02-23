@@ -10,6 +10,9 @@ export const copyToClipboard = async (
   fallbackElement?: HTMLElement,
 ) => {
   const result = await copyToClipboardShared(text, html, fallbackElement);
-  showToast(result.success ? successMessage : failureMessage, toastOptions);
+  await showToast(
+    result.success ? successMessage : failureMessage,
+    toastOptions,
+  );
   return result.success;
 };
