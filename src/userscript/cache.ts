@@ -25,6 +25,11 @@ let cachedCustomRegexes: Partial<
 let cachedUserShortcuts: UserShortcuts = {};
 let settingsLoaded = false;
 
+/**
+ * Reload settings from persistent userscript storage into in-memory cache.
+ *
+ * @returns Nothing.
+ */
 export const refreshSettingsCache = async () => {
   cachedEmojiNames = await GM.getValue("emojiNames", DEFAULT_EMOJI_NAMES);
   cachedCustomRegexes = await GM.getValue("customRegexes", {});
@@ -41,6 +46,13 @@ export const getShortcutForCommand = (
   commandKey: string,
 ): ShortcutDefinition | undefined => cachedUserShortcuts[commandKey];
 
+/**
+ * Update one custom regex and persist it to storage.
+ *
+ * @param key Custom regex key.
+ * @param value Regex string.
+ * @returns Nothing.
+ */
 export const updateCustomRegex = async (
   key: keyof CustomRegexes,
   value: string,
@@ -49,6 +61,13 @@ export const updateCustomRegex = async (
   await GM.setValue("customRegexes", cachedCustomRegexes);
 };
 
+/**
+ * Update one emoji name and persist it to storage.
+ *
+ * @param key Emoji name key.
+ * @param value Emoji text value.
+ * @returns Nothing.
+ */
 export const updateEmojiName = async (
   key: keyof EmojiNameRecord,
   value: EmojiName,
@@ -57,6 +76,13 @@ export const updateEmojiName = async (
   await GM.setValue("emojiNames", cachedEmojiNames);
 };
 
+/**
+ * Update one command shortcut and persist it to storage.
+ *
+ * @param commandKey Command identifier.
+ * @param shortcut Shortcut definition.
+ * @returns Nothing.
+ */
 export const updateShortcut = async (
   commandKey: string,
   shortcut: ShortcutDefinition,

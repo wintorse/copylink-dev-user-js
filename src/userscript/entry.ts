@@ -17,6 +17,11 @@ import { registerShortcuts } from "./shortcuts";
 let settingsController: SettingsController | null = null;
 let shortcutControllerRef: { refresh: () => Promise<void> } | null = null;
 
+/**
+ * Create settings controller lazily and return the singleton instance.
+ *
+ * @returns Settings controller instance.
+ */
 const ensureSettingsController = async () => {
   if (settingsController) {
     return settingsController;
@@ -29,6 +34,11 @@ const ensureSettingsController = async () => {
   return settingsController;
 };
 
+/**
+ * Build toast options with a shortcut to open settings.
+ *
+ * @returns Toast options including a settings action.
+ */
 const toastWithSettings = (): ToastOptions => ({
   actionLabel: getMessage("settingsButton"),
   onAction: () => {
@@ -40,6 +50,11 @@ const toastWithSettings = (): ToastOptions => ({
 
 const isMessageId = (key: string): key is MessageId => key in i18nMessages.en;
 
+/**
+ * Build dependency object consumed by shared copy handlers.
+ *
+ * @returns Dependency object for `copyTextLinkCore`.
+ */
 const buildDeps = (): CopyTextLinkDeps => ({
   t: (key: string) => (isMessageId(key) ? getMessage(key) : key),
   getEmojiName,

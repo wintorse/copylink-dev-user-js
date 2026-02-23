@@ -3,6 +3,13 @@ import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import type { Command } from "@copylink-dev/types/types";
 import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
 
+/**
+ * Check whether the keyboard event exactly matches a shortcut definition.
+ *
+ * @param event Keyboard event to evaluate.
+ * @param shortcut Shortcut definition.
+ * @returns `true` when all key/modifier values match.
+ */
 const matchesShortcut = (event: KeyboardEvent, shortcut: Shortcut) => {
   const normalizedKey = shortcut.key.toLowerCase();
   return (
@@ -14,6 +21,12 @@ const matchesShortcut = (event: KeyboardEvent, shortcut: Shortcut) => {
   );
 };
 
+/**
+ * Normalize a partial shortcut object into a full shortcut definition.
+ *
+ * @param shortcut Partial shortcut.
+ * @returns Normalized shortcut with all boolean modifiers set.
+ */
 const normalizeShortcut = (shortcut: Partial<Shortcut>): Shortcut => ({
   key: shortcut.key ?? "",
   ctrl: Boolean(shortcut.ctrl),
@@ -22,7 +35,12 @@ const normalizeShortcut = (shortcut: Partial<Shortcut>): Shortcut => ({
   meta: Boolean(shortcut.meta),
 });
 
-// Merge default shortcuts with user-defined shortcuts
+/**
+ * Merge default shortcuts with user-defined overrides.
+ *
+ * @param defaults Default shortcut map.
+ * @returns Effective normalized shortcut map.
+ */
 const buildEffectiveShortcuts = (defaults: ShortcutMap): ShortcutMap => {
   const overrides = getUserShortcuts();
   const combined: ShortcutMap = { ...defaults };
@@ -37,6 +55,13 @@ const buildEffectiveShortcuts = (defaults: ShortcutMap): ShortcutMap => {
   ) as ShortcutMap;
 };
 
+/**
+ * Attach a keydown listener to a document in capture phase.
+ *
+ * @param target Target document.
+ * @param handler Keydown handler.
+ * @returns Nothing.
+ */
 const attachDocumentListener = (
   target: Document,
   handler: (ev: KeyboardEvent) => void,
@@ -44,6 +69,13 @@ const attachDocumentListener = (
   target.addEventListener("keydown", handler, true);
 };
 
+/**
+ * Attach a keydown listener to a window in capture phase.
+ *
+ * @param target Target window.
+ * @param handler Keydown handler.
+ * @returns Nothing.
+ */
 const attachWindowListener = (
   target: Window,
   handler: (ev: KeyboardEvent) => void,
@@ -51,6 +83,13 @@ const attachWindowListener = (
   target.addEventListener("keydown", handler, true);
 };
 
+/**
+ * Attach keydown listeners to an iframe when same-origin access is available.
+ *
+ * @param iframe Iframe element.
+ * @param handler Keydown handler.
+ * @returns Nothing.
+ */
 const addListenerToIframe = (
   iframe: HTMLIFrameElement,
   handler: (ev: KeyboardEvent) => void,
@@ -69,6 +108,12 @@ const addListenerToIframe = (
   }
 };
 
+/**
+ * Attach keydown listeners to all current iframes on the page.
+ *
+ * @param handler Keydown handler.
+ * @returns Nothing.
+ */
 const addIframeListeners = (handler: (ev: KeyboardEvent) => void) => {
   const iframes = Array.from(
     document.querySelectorAll<HTMLIFrameElement>("iframe"),
@@ -76,6 +121,12 @@ const addIframeListeners = (handler: (ev: KeyboardEvent) => void) => {
   iframes.forEach((iframe) => addListenerToIframe(iframe, handler));
 };
 
+/**
+ * Observe DOM mutations and attach listeners to newly inserted iframes.
+ *
+ * @param handler Keydown handler.
+ * @returns Mutation observer, or `null` if no valid root exists.
+ */
 const observeIframeAdditions = (
   handler: (ev: KeyboardEvent) => void,
 ): MutationObserver | null => {
@@ -108,6 +159,13 @@ const observeIframeAdditions = (
 const isValidCommand = (value: string): value is Command =>
   Object.values(VALID_COMMANDS).some((c) => c === value);
 
+/**
+ * Register keyboard shortcut listeners and return a refresh controller.
+ *
+ * @param defaults Default shortcut map.
+ * @param commandHandlers Command handlers keyed by command id.
+ * @returns Controller with `refresh()` to reload effective shortcuts.
+ */
 export const registerShortcuts = async (
   defaults: ShortcutMap,
   commandHandlers: Record<Command, () => Promise<void>>,

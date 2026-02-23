@@ -6,6 +6,9 @@ export type Shortcut = {
   meta: boolean;
 };
 
+/**
+ * Command-to-shortcut mapping.
+ */
 export type ShortcutMap = Record<string, Shortcut>;
 
 export type SettingsController = {

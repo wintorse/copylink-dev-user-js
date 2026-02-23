@@ -9,6 +9,11 @@ import {
   refreshSettingsCache,
 } from "./cache";
 
+/**
+ * Resolve the emoji name for the current page context.
+ *
+ * @returns Resolved emoji name string.
+ */
 export const getEmojiName = async (): Promise<string> => {
   if (!isSettingsLoaded()) {
     await refreshSettingsCache();
