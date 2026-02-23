@@ -1,5 +1,5 @@
+import { type ToastOptions, showToast } from "./toast";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
-import { showToast, type ToastOptions } from "./toast";
 
 export const copyToClipboard = async (
   text: string,

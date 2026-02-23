@@ -1,6 +1,6 @@
+import type { Shortcut, ShortcutMap } from "./types";
 import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import type { Command } from "@copylink-dev/types/types";
-import type { Shortcut, ShortcutMap } from "./types";
 
 const matchesShortcut = (event: KeyboardEvent, shortcut: Shortcut) => {
   const normalizedKey = shortcut.key.toLowerCase();
@@ -79,16 +79,22 @@ const observeIframeAdditions = (
   handler: (ev: KeyboardEvent) => void,
 ): MutationObserver | null => {
   const target = document.body || document.documentElement;
-  if (!target) return null;
+  if (!target) {
+    return null;
+  }
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-      if (!mutation.addedNodes) continue;
+      if (!mutation.addedNodes) {
+        continue;
+      }
       mutation.addedNodes.forEach((node) => {
         if (node instanceof HTMLIFrameElement) {
           addListenerToIframe(node, handler);
           return;
         }
-        if (!(node instanceof HTMLElement)) return;
+        if (!(node instanceof HTMLElement)) {
+          return;
+        }
         const nested = node.querySelectorAll<HTMLIFrameElement>("iframe");
         nested.forEach((iframe) => addListenerToIframe(iframe, handler));
       });
@@ -108,7 +114,9 @@ export const registerShortcuts = async (
     const match = Object.entries(effective).find(([, shortcut]) =>
       matchesShortcut(event, shortcut),
     );
-    if (!match) return;
+    if (!match) {
+      return;
+    }
     event.preventDefault();
     const [command] = match;
     const exec = commandHandlers[command as Command];

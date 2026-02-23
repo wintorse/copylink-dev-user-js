@@ -34,7 +34,7 @@ The latest release is automatically mirrored to the Gist below by a workflow:
 1. Install [Userscripts](https://apps.apple.com/jp/app/userscripts/id1463298887) from the App Store.
 2. Click the Userscripts icon in Safari's tab bar and select "Open Extension Page".
 3. Click the **+** button, choose "New Remote", and enter
-	`https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js`.
+   `https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js`.
 4. Click **Save** in the bottom-right corner.
 
 ## Updates

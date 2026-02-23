@@ -1,6 +1,6 @@
 export type SupportedLocale = "en" | "ja" | "zh-CN";
 
-const supportedLocales: SupportedLocale[] = ["ja", "en", "zh-CN"];
+const supportedLocales: Array<SupportedLocale> = ["ja", "en", "zh-CN"];
 
 export const i18nMessages = {
   ja: {

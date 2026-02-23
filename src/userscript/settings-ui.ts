@@ -4,8 +4,7 @@ import {
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
 import type { CustomRegexes, EmojiNameRecord } from "@copylink-dev/types/types";
-import { normalizeEmojiValue } from "@copylink-dev/shared/popup/emojiSettings";
-import { getMessage } from "./i18n";
+import type { SettingsController, Shortcut, ShortcutMap } from "./types";
 import {
   getCachedCustomRegexes,
   getCachedEmojiNames,
@@ -15,10 +14,12 @@ import {
   updateEmojiName,
   updateShortcut,
 } from "./cache";
-import { showToast } from "./toast";
+import { getMessage } from "./i18n";
 import { isMac } from "./constants";
-import type { Shortcut, ShortcutMap, SettingsController } from "./types";
+import { normalizeEmojiValue } from "@copylink-dev/shared/popup/emojiSettings";
 import settingsStyleText from "./settings-ui.css?raw";
+import { showToast } from "./toast";
+
 export type { SettingsController } from "./types";
 
 const SettingsHostId = "copylink-dev-settings-host";
@@ -26,7 +27,7 @@ const SettingsPanelId = "copylink-dev-settings";
 
 type DefaultsMap = ShortcutMap;
 
-const shortcutCommands: { key: string; label: string }[] = [
+const shortcutCommands: Array<{ key: string; label: string }> = [
   { key: "copy-link", label: getMessage("shortcutCopyLink") },
   { key: "copy-link-for-slack", label: getMessage("shortcutCopyLinkForSlack") },
   { key: "copy-title", label: getMessage("shortcutCopyTitle") },
@@ -106,7 +107,7 @@ const getHost = () => {
     host.id = SettingsHostId;
     (document.body || document.documentElement).appendChild(host);
   }
-  const shadow = host.shadowRoot || host.attachShadow({ mode: "open" });
+  const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
   return { host, shadow };
 };
 
@@ -117,7 +118,9 @@ let defaultsRef: DefaultsMap | null = null;
 let onSavedRef: (() => void) | undefined;
 
 const updateVisibilityState = () => {
-  if (!panelElement) return;
+  if (!panelElement) {
+    return;
+  }
   isPanelVisible = panelElement.style.display !== "none";
 };
 
@@ -133,9 +136,15 @@ const createElement = <K extends keyof HTMLElementTagNameMap>(
   } = {},
 ): HTMLElementTagNameMap[K] => {
   const el = document.createElement(tag);
-  if (options.className) el.className = options.className;
-  if (options.text !== undefined) el.textContent = options.text;
-  if (options.id) el.id = options.id;
+  if (options.className) {
+    el.className = options.className;
+  }
+  if (options.text !== undefined) {
+    el.textContent = options.text;
+  }
+  if (options.id) {
+    el.id = options.id;
+  }
   if (options.type && "type" in el) {
     (el as HTMLInputElement).type = options.type;
   }
@@ -144,16 +153,26 @@ const createElement = <K extends keyof HTMLElementTagNameMap>(
 
 const appendChildren = (parent: Node, ...children: Array<Node | null>) => {
   children.forEach((child) => {
-    if (child) parent.appendChild(child);
+    if (child) {
+      parent.appendChild(child);
+    }
   });
 };
 
 const formatShortcut = (shortcut: Shortcut) => {
-  const parts: string[] = [];
-  if (shortcut.ctrl) parts.push("Ctrl");
-  if (shortcut.alt) parts.push("Alt");
-  if (shortcut.shift) parts.push("Shift");
-  if (shortcut.meta) parts.push(isMac ? "⌘" : "Win");
+  const parts: Array<string> = [];
+  if (shortcut.ctrl) {
+    parts.push("Ctrl");
+  }
+  if (shortcut.alt) {
+    parts.push("Alt");
+  }
+  if (shortcut.shift) {
+    parts.push("Shift");
+  }
+  if (shortcut.meta) {
+    parts.push(isMac ? "⌘" : "Win");
+  }
   parts.push(shortcut.key.toUpperCase());
   return parts.join(" + ");
 };
@@ -364,7 +383,9 @@ const createSettingsPanel = () => {
 };
 
 const loadShortcuts = () => {
-  if (!panelShadowRoot || !defaultsRef) return;
+  if (!panelShadowRoot || !defaultsRef) {
+    return;
+  }
   const root = panelShadowRoot;
   const userShortcuts = getUserShortcuts();
 
@@ -379,20 +400,26 @@ const loadShortcuts = () => {
 };
 
 const loadEmojiFields = () => {
-  if (!panelShadowRoot) return;
+  if (!panelShadowRoot) {
+    return;
+  }
   const root = panelShadowRoot;
   const emojiNames = getCachedEmojiNames();
 
   EMOJI_KEYS.forEach((key) => {
     const input = root.querySelector<HTMLInputElement>(`#${key}`);
-    if (!input) return;
+    if (!input) {
+      return;
+    }
     input.value = emojiNames[key];
     input.placeholder = DEFAULT_EMOJI_NAMES[key];
   });
 };
 
 const loadCustomRegexFields = () => {
-  if (!panelShadowRoot) return;
+  if (!panelShadowRoot) {
+    return;
+  }
   const root = panelShadowRoot;
   const regexes = getCachedCustomRegexes();
 
@@ -413,7 +440,9 @@ const loadSettings = () => {
 };
 
 const saveSettings = async () => {
-  if (!panelShadowRoot || !defaultsRef) return;
+  if (!panelShadowRoot || !defaultsRef) {
+    return;
+  }
   const root = panelShadowRoot;
 
   const emojiInputs = Array.from(
@@ -457,7 +486,9 @@ const saveSettings = async () => {
 };
 
 const showPanel = async () => {
-  if (!panelElement) return;
+  if (!panelElement) {
+    return;
+  }
   await refreshSettingsCache();
   loadSettings();
   panelElement.style.display = "block";
@@ -465,7 +496,9 @@ const showPanel = async () => {
 };
 
 const hidePanel = () => {
-  if (!panelElement) return;
+  if (!panelElement) {
+    return;
+  }
   panelElement.style.display = "none";
   updateVisibilityState();
 };

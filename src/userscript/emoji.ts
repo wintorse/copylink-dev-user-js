@@ -1,9 +1,12 @@
-import { resolveEmojiName, type PageContext } from "@copylink-dev/shared/emojiResolver";
+import {
+  type PageContext,
+  resolveEmojiName,
+} from "@copylink-dev/shared/emojiResolver";
 import {
   getCachedCustomRegexes,
   getCachedEmojiNames,
-  refreshSettingsCache,
   isSettingsLoaded,
+  refreshSettingsCache,
 } from "./cache";
 
 export const getEmojiName = async (): Promise<string> => {

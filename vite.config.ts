@@ -1,6 +1,6 @@
-import path from "node:path";
 import { defineConfig } from "vite";
 import monkey from "vite-plugin-monkey";
+import path from "node:path";
 import pkg from "./package.json";
 
 const version = pkg.version;

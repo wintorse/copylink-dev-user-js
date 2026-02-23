@@ -1,5 +1,5 @@
 import {
-  CUSTOM_REGEX_KEYS,
+  type CUSTOM_REGEX_KEYS,
   DEFAULT_EMOJI_NAMES,
 } from "@copylink-dev/shared/constants";
 import type {

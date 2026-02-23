@@ -14,10 +14,9 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "preserve",
-    "baseUrl": "./",
     "paths": {
-      "@copylink-dev/*": ["src/copylink-dev/src/*"],
-      "@copylink-dev/public/*": ["src/copylink-dev/public/*"]
+      "@copylink-dev/*": ["./src/copylink-dev/src/*"],
+      "@copylink-dev/public/*": ["./src/copylink-dev/public/*"]
     },
 
     /* Linting */

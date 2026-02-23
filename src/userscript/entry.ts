@@ -1,24 +1,26 @@
+import {
+  type CopyTextLinkDeps,
+  copyTextLinkCore,
+} from "@copylink-dev/shared/clipboard/copyTextLinkCore";
+import { type MessageId, getMessage } from "./i18n";
+import { type ToastOptions, showToast } from "./toast";
+import type { Command } from "@copylink-dev/types/types";
+import type { SettingsController } from "./types";
+import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
+import { defaultShortcuts } from "./constants";
+import { getEmojiName } from "./emoji";
 import { getFormattedTitle } from "@copylink-dev/shared/getFormattedTitle";
 import { getGoogleSheetsRangeInfo } from "@copylink-dev/shared/getGoogleSheetsRangeLink";
-import {
-  copyTextLinkCore,
-  type CopyTextLinkDeps,
-} from "@copylink-dev/shared/clipboard/copyTextLinkCore";
-import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
-import type { Command } from "@copylink-dev/types/types";
-import { getMessage, type MessageId } from "./i18n";
-import { showToast, type ToastOptions } from "./toast";
-import { getEmojiName } from "./emoji";
 import { initSettingsUI } from "./settings-ui";
 import { registerShortcuts } from "./shortcuts";
-import { defaultShortcuts } from "./constants";
-import type { SettingsController } from "./types";
 
 let settingsController: SettingsController | null = null;
 let shortcutControllerRef: { refresh: () => Promise<void> } | null = null;
 
 const ensureSettingsController = async () => {
-  if (settingsController) return settingsController;
+  if (settingsController) {
+    return settingsController;
+  }
   settingsController = await initSettingsUI(defaultShortcuts, () =>
     shortcutControllerRef?.refresh(),
   );

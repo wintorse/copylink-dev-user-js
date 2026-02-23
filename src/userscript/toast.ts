@@ -1,8 +1,8 @@
-import toastCss from "@copylink-dev/public/styles/toast.css?raw";
 import {
-  showToastCore,
   type ToastOptions as SharedToastOptions,
+  showToastCore,
 } from "@copylink-dev/shared/ui/toast";
+import toastCss from "@copylink-dev/public/styles/toast.css?raw";
 
 export type ToastOptions = SharedToastOptions & {
   actionLabel?: string;
