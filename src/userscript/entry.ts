@@ -6,7 +6,6 @@ import { type MessageId, getMessage, i18nMessages } from "./i18n";
 import { type ToastOptions, showToast } from "./toast";
 import type { Command } from "@copylink-dev/types/types";
 import type { SettingsController } from "./types";
-import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 import { defaultShortcuts } from "./constants";
 import { getEmojiName } from "./emoji";
@@ -41,9 +40,6 @@ const toastWithSettings = (): ToastOptions => ({
 
 const isMessageId = (key: string): key is MessageId => key in i18nMessages.en;
 
-const isCommand = (value: string): value is Command =>
-  Object.values(VALID_COMMANDS).some((c) => c === value);
-
 const buildDeps = (): CopyTextLinkDeps => ({
   t: (key: string) => (isMessageId(key) ? getMessage(key) : key),
   getEmojiName,
@@ -64,8 +60,6 @@ const copyHandlers: Record<Command, () => Promise<void>> = {
   "copy-google-sheets-range": () =>
     copyTextLinkCore("copy-google-sheets-range", buildDeps()),
 };
-
-export { isCommand };
 
 const init = async () => {
   const shortcutController = await registerShortcuts(
