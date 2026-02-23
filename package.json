@@ -1,18 +1,24 @@
 {
   "name": "copylink-dev-user-js",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "oxlint --type-aware",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/tampermonkey": "^5.0.5",
+    "oxfmt": "^0.34.0",
+    "oxlint": "^1.49.0",
+    "oxlint-tsgolint": "^0.14.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-plugin-monkey": "^7.1.9",
-    "@types/tampermonkey": "^5.0.5"
+    "vite-plugin-monkey": "^7.1.9"
   }
 }
