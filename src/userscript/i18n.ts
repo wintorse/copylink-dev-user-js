@@ -129,14 +129,17 @@ export const i18nMessages = {
   },
 } as const;
 
+const isSupportedLocale = (lang: string): lang is SupportedLocale =>
+  (supportedLocales as ReadonlyArray<string>).includes(lang);
+
 export const detectLocale = (): SupportedLocale => {
   const lang = navigator.language || "en";
-  if (supportedLocales.includes(lang as SupportedLocale)) {
-    return lang as SupportedLocale;
+  if (isSupportedLocale(lang)) {
+    return lang;
   }
   const langBase = lang.split("-")[0];
   const match = supportedLocales.find((locale) => locale.startsWith(langBase));
-  return (match as SupportedLocale) || "en";
+  return match ?? "en";
 };
 
 type LocaleMessages = (typeof i18nMessages)[SupportedLocale];

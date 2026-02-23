@@ -9,8 +9,8 @@ export type Shortcut = {
 export type ShortcutMap = Record<string, Shortcut>;
 
 export type SettingsController = {
-  show: () => void;
+  show: () => Promise<void>;
   hide: () => void;
-  toggle: () => void;
+  toggle: () => Promise<void>;
   isOpen: () => boolean;
 };

@@ -2,10 +2,11 @@ import {
   type CopyTextLinkDeps,
   copyTextLinkCore,
 } from "@copylink-dev/shared/clipboard/copyTextLinkCore";
-import { type MessageId, getMessage } from "./i18n";
+import { type MessageId, getMessage, i18nMessages } from "./i18n";
 import { type ToastOptions, showToast } from "./toast";
 import type { Command } from "@copylink-dev/types/types";
 import type { SettingsController } from "./types";
+import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 import { defaultShortcuts } from "./constants";
 import { getEmojiName } from "./emoji";
@@ -21,26 +22,36 @@ const ensureSettingsController = async () => {
   if (settingsController) {
     return settingsController;
   }
-  settingsController = await initSettingsUI(defaultShortcuts, () =>
-    shortcutControllerRef?.refresh(),
-  );
+  settingsController = await initSettingsUI(defaultShortcuts, () => {
+    if (shortcutControllerRef) {
+      shortcutControllerRef.refresh().catch(console.error);
+    }
+  });
   return settingsController;
 };
 
 const toastWithSettings = (): ToastOptions => ({
   actionLabel: getMessage("settingsButton"),
   onAction: () => {
-    ensureSettingsController().then((controller) => controller.show());
+    ensureSettingsController()
+      .then((controller) => controller.show())
+      .catch(console.error);
   },
 });
 
+const isMessageId = (key: string): key is MessageId => key in i18nMessages.en;
+
+const isCommand = (value: string): value is Command =>
+  Object.values(VALID_COMMANDS).some((c) => c === value);
+
 const buildDeps = (): CopyTextLinkDeps => ({
-  t: (key: string) => getMessage(key as MessageId),
+  t: (key: string) => (isMessageId(key) ? getMessage(key) : key),
   getEmojiName,
   getFormattedTitle,
   getGoogleSheetsRangeInfo,
   getUrl: () => document.location.href,
-  notify: (message: string) => showToast(message, toastWithSettings()),
+  notify: async (message: string) =>
+    await showToast(message, toastWithSettings()),
   copy: (text, html, fallbackElement) =>
     copyToClipboardShared(text, html, fallbackElement),
 });
@@ -54,6 +65,8 @@ const copyHandlers: Record<Command, () => Promise<void>> = {
     copyTextLinkCore("copy-google-sheets-range", buildDeps()),
 };
 
+export { isCommand };
+
 const init = async () => {
   const shortcutController = await registerShortcuts(
     defaultShortcuts,
@@ -63,4 +76,4 @@ const init = async () => {
   await ensureSettingsController();
 };
 
-init();
+init().catch(console.error);

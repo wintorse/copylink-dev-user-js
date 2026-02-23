@@ -3,7 +3,7 @@ import {
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
-import type { CustomRegexes, EmojiNameRecord } from "@copylink-dev/types/types";
+import type { CustomRegexKeys, EmojiKeys } from "@copylink-dev/types/types";
 import type { SettingsController, Shortcut, ShortcutMap } from "./types";
 import {
   getCachedCustomRegexes,
@@ -21,6 +21,19 @@ import settingsStyleText from "./settings-ui.css?raw";
 import { showToast } from "./toast";
 
 export type { SettingsController } from "./types";
+
+const isEmojiKey = (key: string | undefined): key is EmojiKeys =>
+  key !== undefined && (EMOJI_KEYS as ReadonlyArray<string>).includes(key);
+
+const isCustomRegexKey = (key: string | undefined): key is CustomRegexKeys =>
+  key !== undefined &&
+  (CUSTOM_REGEX_KEYS as ReadonlyArray<string>).includes(key);
+
+const isShortcut = (value: unknown): value is Shortcut =>
+  typeof value === "object" &&
+  value !== null &&
+  "key" in value &&
+  typeof (value as Record<string, unknown>).key === "string";
 
 const SettingsHostId = "copylink-dev-settings-host";
 const SettingsPanelId = "copylink-dev-settings";
@@ -105,7 +118,7 @@ const getHost = () => {
   if (!host) {
     host = document.createElement("div");
     host.id = SettingsHostId;
-    (document.body || document.documentElement).appendChild(host);
+    (document.body ?? document.documentElement).appendChild(host);
   }
   const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
   return { host, shadow };
@@ -136,17 +149,21 @@ const createElement = <K extends keyof HTMLElementTagNameMap>(
   } = {},
 ): HTMLElementTagNameMap[K] => {
   const el = document.createElement(tag);
-  if (options.className) {
+  if (options.className !== undefined && options.className !== "") {
     el.className = options.className;
   }
   if (options.text !== undefined) {
     el.textContent = options.text;
   }
-  if (options.id) {
+  if (options.id !== undefined && options.id !== "") {
     el.id = options.id;
   }
-  if (options.type && "type" in el) {
-    (el as HTMLInputElement).type = options.type;
+  if (
+    options.type !== undefined &&
+    options.type !== "" &&
+    el instanceof HTMLInputElement
+  ) {
+    el.type = options.type;
   }
   return el;
 };
@@ -177,9 +194,9 @@ const formatShortcut = (shortcut: Shortcut) => {
   return parts.join(" + ");
 };
 
-const getEffectiveShortcut = (commandKey: string) => {
+const getEffectiveShortcut = (commandKey: string): Shortcut | undefined => {
   const userShortcuts = getUserShortcuts();
-  return (userShortcuts[commandKey] || defaultsRef?.[commandKey]) as Shortcut;
+  return userShortcuts[commandKey] ?? defaultsRef?.[commandKey];
 };
 
 const createShortcutInput = (commandKey: string, labelText: string) => {
@@ -197,7 +214,7 @@ const createShortcutInput = (commandKey: string, labelText: string) => {
   input.readOnly = true;
 
   const current = getEffectiveShortcut(commandKey);
-  if (current) {
+  if (current !== undefined) {
     input.value = formatShortcut(current);
   }
 
@@ -209,7 +226,7 @@ const createShortcutInput = (commandKey: string, labelText: string) => {
   input.addEventListener("blur", () => {
     if (!input.value) {
       const shortcut = getEffectiveShortcut(commandKey);
-      if (shortcut) {
+      if (shortcut !== undefined) {
         input.value = formatShortcut(shortcut);
       }
     }
@@ -372,7 +389,9 @@ const createSettingsPanel = () => {
     className: "save-btn",
     text: getMessage("saveSettings"),
   });
-  saveBtn.addEventListener("click", () => saveSettings());
+  saveBtn.addEventListener("click", () => {
+    saveSettings().catch(console.error);
+  });
   appendChildren(panel, saveBtn);
 
   shadow.appendChild(panel);
@@ -391,9 +410,9 @@ const loadShortcuts = () => {
 
   shortcutCommands.forEach(({ key }) => {
     const input = root.querySelector<HTMLInputElement>(`#shortcut-${key}`);
-    const effective = userShortcuts[key] || defaultsRef?.[key];
-    if (input && effective) {
-      input.value = formatShortcut(effective as Shortcut);
+    const effective = userShortcuts[key] ?? defaultsRef?.[key];
+    if (input && effective !== undefined) {
+      input.value = formatShortcut(effective);
       input.dataset.shortcut = JSON.stringify(effective);
     }
   });
@@ -456,25 +475,35 @@ const saveSettings = async () => {
   );
 
   for (const input of emojiInputs) {
-    const key = input.dataset.emojiKey as keyof EmojiNameRecord;
+    const emojiKey = input.dataset.emojiKey;
+    if (!isEmojiKey(emojiKey)) {
+      continue;
+    }
     const normalized = normalizeEmojiValue(
       input.value,
-      DEFAULT_EMOJI_NAMES[key],
+      DEFAULT_EMOJI_NAMES[emojiKey],
     );
-    await updateEmojiName(key, normalized);
+    await updateEmojiName(emojiKey, normalized);
   }
 
   for (const input of regexInputs) {
-    const key = input.dataset.regexKey as keyof CustomRegexes;
-    await updateCustomRegex(key, input.value || "");
+    const regexKey = input.dataset.regexKey;
+    if (!isCustomRegexKey(regexKey)) {
+      continue;
+    }
+    await updateCustomRegex(regexKey, input.value || "");
   }
 
   for (const input of shortcutInputs) {
-    const commandKey = input.dataset.commandKey as string;
-    const parsed = input.dataset.shortcut
-      ? (JSON.parse(input.dataset.shortcut) as Shortcut)
-      : defaultsRef[commandKey];
-    if (parsed) {
+    const commandKey = input.dataset.commandKey ?? "";
+    const parsed =
+      input.dataset.shortcut !== undefined && input.dataset.shortcut !== ""
+        ? (() => {
+            const p: unknown = JSON.parse(input.dataset.shortcut ?? "");
+            return isShortcut(p) ? p : null;
+          })()
+        : defaultsRef[commandKey];
+    if (parsed !== null && parsed !== undefined) {
       await updateShortcut(commandKey, parsed);
     }
   }

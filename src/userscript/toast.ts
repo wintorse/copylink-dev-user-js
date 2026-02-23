@@ -32,9 +32,12 @@ const extraButtonStyles = `
   }
 `;
 
-export const showToast = (message: string, options: ToastOptions = {}) => {
+export const showToast = async (
+  message: string,
+  options: ToastOptions = {},
+) => {
   const { actionLabel, onAction, ...sharedOptions } = options;
-  showToastCore(message, document, {
+  await showToastCore(message, document, {
     ...sharedOptions,
     renderContent: (container, text) => {
       const style = document.createElement("style");
@@ -45,12 +48,12 @@ export const showToast = (message: string, options: ToastOptions = {}) => {
       messageNode.textContent = text;
       container.appendChild(messageNode);
 
-      if (actionLabel && onAction) {
+      if (actionLabel !== undefined && actionLabel !== "" && onAction) {
         const actionBtn = document.createElement("button");
         actionBtn.textContent = actionLabel;
         actionBtn.addEventListener("click", () => onAction());
         container.appendChild(actionBtn);
       }
     },
-  });
+  }).catch(console.error);
 };

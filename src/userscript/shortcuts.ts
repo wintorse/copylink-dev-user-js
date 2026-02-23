@@ -1,6 +1,7 @@
 import type { Shortcut, ShortcutMap } from "./types";
 import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import type { Command } from "@copylink-dev/types/types";
+import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
 
 const matchesShortcut = (event: KeyboardEvent, shortcut: Shortcut) => {
   const normalizedKey = shortcut.key.toLowerCase();
@@ -78,13 +79,13 @@ const addIframeListeners = (handler: (ev: KeyboardEvent) => void) => {
 const observeIframeAdditions = (
   handler: (ev: KeyboardEvent) => void,
 ): MutationObserver | null => {
-  const target = document.body || document.documentElement;
-  if (!target) {
+  const target: Element | null = document.body ?? document.documentElement;
+  if (target === null) {
     return null;
   }
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-      if (!mutation.addedNodes) {
+      if (mutation.addedNodes.length === 0) {
         continue;
       }
       mutation.addedNodes.forEach((node) => {
@@ -104,6 +105,9 @@ const observeIframeAdditions = (
   return observer;
 };
 
+const isValidCommand = (value: string): value is Command =>
+  Object.values(VALID_COMMANDS).some((c) => c === value);
+
 export const registerShortcuts = async (
   defaults: ShortcutMap,
   commandHandlers: Record<Command, () => Promise<void>>,
@@ -119,9 +123,8 @@ export const registerShortcuts = async (
     }
     event.preventDefault();
     const [command] = match;
-    const exec = commandHandlers[command as Command];
-    if (exec) {
-      exec();
+    if (isValidCommand(command)) {
+      commandHandlers[command]().catch(console.error);
     }
   };
   attachDocumentListener(document, handler);
