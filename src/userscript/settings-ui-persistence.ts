@@ -3,13 +3,16 @@ import {
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
+import { SheetsRangeFormatSelectId, formatShortcut } from "./settings-ui-dom";
 import {
   getCachedCustomRegexes,
   getCachedEmojiNames,
+  getCachedSheetsRangeFormat,
   getUserShortcuts,
   refreshSettingsCache,
   updateCustomRegex,
   updateEmojiName,
+  updateSheetsRangeFormat,
   updateShortcut,
 } from "./cache";
 import {
@@ -19,7 +22,6 @@ import {
   shortcutCommands,
 } from "./settings-ui-config";
 import type { ShortcutMap } from "./types";
-import { formatShortcut } from "./settings-ui-dom";
 import { getMessage } from "./i18n";
 import { normalizeEmojiValue } from "@copylink-dev/shared/popup/emojiSettings";
 import { showToast } from "./toast";
@@ -70,6 +72,13 @@ export const loadSettings = (
       input.value = regexes[key] ?? "";
     }
   });
+
+  const formatSelect = root.querySelector<HTMLSelectElement>(
+    `#${SheetsRangeFormatSelectId}`,
+  );
+  if (formatSelect) {
+    formatSelect.value = getCachedSheetsRangeFormat();
+  }
 };
 
 type SaveSettingsParams = {
@@ -145,6 +154,22 @@ export const saveSettings = async ({
         : defaultsRef[commandKey];
     if (parsed !== null && parsed !== undefined) {
       await updateShortcut(commandKey, parsed);
+    }
+  }
+
+  // Process sheets range format selection.
+  const formatSelect = root.querySelector<HTMLSelectElement>(
+    `#${SheetsRangeFormatSelectId}`,
+  );
+  if (formatSelect) {
+    const value = formatSelect.value;
+    if (
+      value === "html" ||
+      value === "htmlWithEmoji" ||
+      value === "markdown" ||
+      value === "plainUrl"
+    ) {
+      await updateSheetsRangeFormat(value);
     }
   }
 

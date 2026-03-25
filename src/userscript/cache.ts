@@ -6,6 +6,7 @@ import type {
   CustomRegexes,
   EmojiName,
   EmojiNameRecord,
+  LinkFormat,
 } from "@copylink-dev/types/types";
 
 export type UserShortcuts = Record<string, ShortcutDefinition>;
@@ -23,6 +24,7 @@ let cachedCustomRegexes: Partial<
   Record<(typeof CUSTOM_REGEX_KEYS)[number], string>
 > = {};
 let cachedUserShortcuts: UserShortcuts = {};
+let cachedSheetsRangeFormat: LinkFormat = "htmlWithEmoji";
 let settingsLoaded = false;
 
 /**
@@ -34,12 +36,17 @@ export const refreshSettingsCache = async () => {
   cachedEmojiNames = await GM.getValue("emojiNames", DEFAULT_EMOJI_NAMES);
   cachedCustomRegexes = await GM.getValue("customRegexes", {});
   cachedUserShortcuts = await GM.getValue("userShortcuts", {});
+  cachedSheetsRangeFormat = await GM.getValue(
+    "sheetsRangeFormat",
+    "htmlWithEmoji",
+  );
   settingsLoaded = true;
 };
 
 export const getCachedEmojiNames = () => cachedEmojiNames;
 export const getCachedCustomRegexes = () => cachedCustomRegexes;
 export const getUserShortcuts = () => cachedUserShortcuts;
+export const getCachedSheetsRangeFormat = () => cachedSheetsRangeFormat;
 export const isSettingsLoaded = () => settingsLoaded;
 
 export const getShortcutForCommand = (
@@ -89,4 +96,9 @@ export const updateShortcut = async (
 ) => {
   cachedUserShortcuts[commandKey] = shortcut;
   await GM.setValue("userShortcuts", cachedUserShortcuts);
+};
+
+export const updateSheetsRangeFormat = async (format: LinkFormat) => {
+  cachedSheetsRangeFormat = format;
+  await GM.setValue("sheetsRangeFormat", format);
 };
