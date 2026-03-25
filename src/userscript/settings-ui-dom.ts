@@ -172,10 +172,10 @@ const createSheetsRangeShortcutRow = (
   });
 
   const labelWrapper = createElement("div", { className: "shortcut-label" });
-  const labelText = createElement("span", {
-    text: getMessage("shortcutCopyGoogleSheetsRange"),
-  });
-  appendChildren(labelWrapper, labelText);
+  const labelForSelect = document.createElement("label");
+  labelForSelect.htmlFor = SheetsRangeFormatSelectId;
+  labelForSelect.textContent = getMessage("shortcutCopyGoogleSheetsRange");
+  appendChildren(labelWrapper, labelForSelect);
 
   const select = document.createElement("select");
   select.id = SheetsRangeFormatSelectId;
@@ -195,6 +195,7 @@ const createSheetsRangeShortcutRow = (
   }) as HTMLInputElement;
   input.dataset.commandKey = commandKey;
   input.readOnly = true;
+  input.setAttribute("aria-label", getMessage("userShortcuts"));
 
   const current = getEffectiveShortcut(commandKey);
   if (current !== undefined) {
