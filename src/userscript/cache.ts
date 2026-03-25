@@ -8,6 +8,7 @@ import type {
   EmojiNameRecord,
   LinkFormat,
 } from "@copylink-dev/types/types";
+import { isSheetsRangeFormat } from "./settings-ui-config";
 
 export type UserShortcuts = Record<string, ShortcutDefinition>;
 
@@ -36,10 +37,10 @@ export const refreshSettingsCache = async () => {
   cachedEmojiNames = await GM.getValue("emojiNames", DEFAULT_EMOJI_NAMES);
   cachedCustomRegexes = await GM.getValue("customRegexes", {});
   cachedUserShortcuts = await GM.getValue("userShortcuts", {});
-  cachedSheetsRangeFormat = await GM.getValue(
-    "sheetsRangeFormat",
-    "htmlWithEmoji",
-  );
+  const storedFormat = await GM.getValue("sheetsRangeFormat", "htmlWithEmoji");
+  cachedSheetsRangeFormat = isSheetsRangeFormat(storedFormat)
+    ? storedFormat
+    : "htmlWithEmoji";
   settingsLoaded = true;
 };
 

@@ -3,9 +3,30 @@ import {
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
-import type { CustomRegexKeys, EmojiKeys } from "@copylink-dev/types/types";
+import type {
+  CustomRegexKeys,
+  EmojiKeys,
+  LinkFormat,
+} from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
 import { getMessage } from "./i18n";
+
+/** Allowed format values for the Sheets range copy shortcut. */
+export const SHEETS_RANGE_FORMATS = [
+  "html",
+  "htmlWithEmoji",
+  "markdown",
+  "plainUrl",
+] as const satisfies ReadonlyArray<LinkFormat>;
+
+export type SheetsRangeFormat = (typeof SHEETS_RANGE_FORMATS)[number];
+
+/** Type guard for valid `sheetsRangeFormat` values. */
+export const isSheetsRangeFormat = (
+  value: unknown,
+): value is SheetsRangeFormat =>
+  typeof value === "string" &&
+  (SHEETS_RANGE_FORMATS as ReadonlyArray<string>).includes(value);
 
 export const isEmojiKey = (key: string | undefined): key is EmojiKeys =>
   key !== undefined && (EMOJI_KEYS as ReadonlyArray<string>).includes(key);

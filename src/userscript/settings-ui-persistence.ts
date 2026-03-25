@@ -18,6 +18,7 @@ import {
 import {
   isCustomRegexKey,
   isEmojiKey,
+  isSheetsRangeFormat,
   isShortcut,
   shortcutCommands,
 } from "./settings-ui-config";
@@ -77,7 +78,17 @@ export const loadSettings = (
     `#${SheetsRangeFormatSelectId}`,
   );
   if (formatSelect) {
-    formatSelect.value = getCachedSheetsRangeFormat();
+    const cachedFormat = getCachedSheetsRangeFormat();
+    const options = Array.from(formatSelect.options);
+    const hasCachedOption = options.some(
+      (option) => option.value === cachedFormat,
+    );
+    if (hasCachedOption) {
+      formatSelect.value = cachedFormat;
+    } else if (options.length > 0) {
+      // Fallback to the first available option to avoid a blank selection.
+      formatSelect.value = options[0].value;
+    }
   }
 };
 
@@ -163,12 +174,7 @@ export const saveSettings = async ({
   );
   if (formatSelect) {
     const value = formatSelect.value;
-    if (
-      value === "html" ||
-      value === "htmlWithEmoji" ||
-      value === "markdown" ||
-      value === "plainUrl"
-    ) {
+    if (isSheetsRangeFormat(value)) {
       await updateSheetsRangeFormat(value);
     }
   }
