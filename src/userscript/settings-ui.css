@@ -120,6 +120,24 @@
   align-items: center;
 }
 
+.shortcut-row-sheets .shortcut-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  grid-column: 1 / -1;
+}
+
+.sheets-format-select {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 0.9em;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  margin-top: 2px;
+}
+
 .shortcut-input,
 .settings-content input[type="text"] {
   border: 1px solid var(--border-color);
