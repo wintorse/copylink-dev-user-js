@@ -1,6 +1,6 @@
 {
   "name": "copylink-dev-user-js",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,10 +14,10 @@
   },
   "devDependencies": {
     "@types/tampermonkey": "^5.0.5",
-    "oxfmt": "^0.34.0",
-    "oxlint": "^1.49.0",
-    "oxlint-tsgolint": "^0.14.2",
-    "typescript": "^5.9.3",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
+    "oxlint-tsgolint": "^0.17.3",
+    "typescript": "^6.0.2",
     "vite": "^7.3.1",
     "vite-plugin-monkey": "^7.1.9"
   }

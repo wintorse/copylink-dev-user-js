@@ -3,10 +3,24 @@ import {
   DEFAULT_EMOJI_NAMES,
 } from "@copylink-dev/shared/constants";
 import { shortcutCommands, slackFields } from "./settings-ui-config";
+import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
 import { getMessage } from "./i18n";
 import { isMac } from "./constants";
 import settingsStyleText from "./settings-ui.css?raw";
+
+/** ID of the sheets range format dropdown. */
+export const SheetsRangeFormatSelectId = "sheets-range-format";
+
+const sheetsRangeFormatOptions: Array<{
+  value: LinkFormat;
+  labelKey: Parameters<typeof getMessage>[0];
+}> = [
+  { value: "html", labelKey: "sheetsRangeFormatHtml" },
+  { value: "htmlWithEmoji", labelKey: "sheetsRangeFormatHtmlWithEmoji" },
+  { value: "markdown", labelKey: "sheetsRangeFormatMarkdown" },
+  { value: "plainUrl", labelKey: "sheetsRangeFormatPlainUrl" },
+];
 
 /** Host element ID for the settings UI. */
 export const SettingsHostId = "copylink-dev-settings-host";
@@ -149,6 +163,78 @@ const createShortcutInput = (
   return wrapper;
 };
 
+const createSheetsRangeShortcutRow = (
+  getEffectiveShortcut: (commandKey: string) => Shortcut | undefined,
+) => {
+  const commandKey = "copy-google-sheets-range";
+  const wrapper = createElement("div", {
+    className: "shortcut-row shortcut-row-sheets",
+  });
+
+  const labelWrapper = createElement("div", { className: "shortcut-label" });
+  const labelForSelect = document.createElement("label");
+  labelForSelect.htmlFor = SheetsRangeFormatSelectId;
+  labelForSelect.textContent = getMessage("shortcutCopyGoogleSheetsRange");
+  appendChildren(labelWrapper, labelForSelect);
+
+  const select = document.createElement("select");
+  select.id = SheetsRangeFormatSelectId;
+  select.className = "sheets-format-select";
+  sheetsRangeFormatOptions.forEach((opt) => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = getMessage(opt.labelKey);
+    select.appendChild(option);
+  });
+  appendChildren(labelWrapper, select);
+
+  const input = createElement("input", {
+    className: "shortcut-input",
+    id: `shortcut-${commandKey}`,
+    type: "text",
+  }) as HTMLInputElement;
+  input.dataset.commandKey = commandKey;
+  input.readOnly = true;
+  input.setAttribute("aria-label", getMessage("userShortcuts"));
+
+  const current = getEffectiveShortcut(commandKey);
+  if (current !== undefined) {
+    input.value = formatShortcut(current);
+  }
+
+  input.addEventListener("focus", () => {
+    input.value = "";
+    input.placeholder = getMessage("shortcutInputPlaceholder");
+  });
+
+  input.addEventListener("blur", () => {
+    if (!input.value) {
+      const shortcut = getEffectiveShortcut(commandKey);
+      if (shortcut !== undefined) {
+        input.value = formatShortcut(shortcut);
+      }
+    }
+  });
+
+  input.addEventListener("keydown", (e) => {
+    e.preventDefault();
+    const shortcut: Shortcut = {
+      key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
+      ctrl: e.ctrlKey,
+      shift: e.shiftKey,
+      alt: e.altKey,
+      meta: e.metaKey,
+    };
+    input.value = formatShortcut(shortcut);
+    input.dataset.shortcut = JSON.stringify(shortcut);
+  });
+
+  appendChildren(labelWrapper, input);
+  appendChildren(wrapper, labelWrapper);
+
+  return wrapper;
+};
+
 const createEmojiFields = () => {
   const section = createElement("div", { className: "section" });
 
@@ -262,12 +348,17 @@ export const createSettingsPanel = ({
     className: "shortcut-section",
   });
   shortcutCommands.forEach((shortcut) => {
-    const row = createShortcutInput(
-      shortcut.key,
-      shortcut.label,
-      getEffectiveShortcut,
-    );
-    appendChildren(shortcutSection, row);
+    if (shortcut.key === "copy-google-sheets-range") {
+      const row = createSheetsRangeShortcutRow(getEffectiveShortcut);
+      appendChildren(shortcutSection, row);
+    } else {
+      const row = createShortcutInput(
+        shortcut.key,
+        shortcut.label,
+        getEffectiveShortcut,
+      );
+      appendChildren(shortcutSection, row);
+    }
   });
   appendChildren(settingsContent, shortcutSection);
 

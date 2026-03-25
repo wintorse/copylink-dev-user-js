@@ -8,6 +8,7 @@ import type { Command } from "@copylink-dev/types/types";
 import type { SettingsController } from "./types";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 import { defaultShortcuts } from "./constants";
+import { getCachedSheetsRangeFormat } from "./cache";
 import { getEmojiName } from "./emoji";
 import { getFormattedTitle } from "@copylink-dev/shared/getFormattedTitle";
 import { getGoogleSheetsRangeInfo } from "@copylink-dev/shared/getGoogleSheetsRangeLink";
@@ -58,6 +59,7 @@ const isMessageId = (key: string): key is MessageId => key in i18nMessages.en;
 const buildDeps = (): CopyTextLinkDeps => ({
   t: (key: string) => (isMessageId(key) ? getMessage(key) : key),
   getEmojiName,
+  getLinkFormat: () => Promise.resolve(getCachedSheetsRangeFormat()),
   getFormattedTitle,
   getGoogleSheetsRangeInfo,
   getUrl: () => document.location.href,
