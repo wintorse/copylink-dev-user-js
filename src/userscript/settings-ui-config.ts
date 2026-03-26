@@ -21,7 +21,6 @@ export const SHEETS_RANGE_FORMATS = [
 
 export type SheetsRangeFormat = (typeof SHEETS_RANGE_FORMATS)[number];
 
-/** Type guard for valid `sheetsRangeFormat` values. */
 export const isSheetsRangeFormat = (
   value: unknown,
 ): value is SheetsRangeFormat =>
