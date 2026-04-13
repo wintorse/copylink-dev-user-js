@@ -19,17 +19,20 @@ jobs:
         with:
           submodules: true
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "25"
-          cache: "npm"
+          node-version: "24"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build
-        run: npm run build # generates dist/copylink-dev.user.js
+        run: pnpm run build # generates dist/copylink-dev.user.js
 
       - name: Create GitHub Release
         if: github.ref_type == 'tag'
