@@ -18,7 +18,7 @@
     "oxlint": "^1.59.0",
     "oxlint-tsgolint": "^0.20.0",
     "typescript": "^6.0.2",
-    "vite": "^7.3.1",
+    "vite": "^7.3.2",
     "vite-plugin-monkey": "^7.1.9"
   },
   "engines": {
