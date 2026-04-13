@@ -57,3 +57,15 @@
 ```sh
 git clone --recursive git@github.com:wintorse/copylink-dev-user-js.git
 ```
+
+## 開発
+
+このプロジェクトはパッケージマネージャーとして [pnpm](https://pnpm.io/) を使用しています。Node.js >=24 と pnpm >=10 が必要です。
+
+```sh
+# 依存関係のインストール
+pnpm install
+
+# ビルド
+pnpm run build
+```

@@ -58,3 +58,15 @@ When cloning this repository, use a recursive clone so the submodule is fetched:
 ```sh
 git clone --recursive git@github.com:wintorse/copylink-dev-user-js.git
 ```
+
+## Development
+
+This project uses [pnpm](https://pnpm.io/) as the package manager. Requires Node.js >=24 and pnpm >=10.
+
+```sh
+# Install dependencies
+pnpm install
+
+# Build
+pnpm run build
+```
