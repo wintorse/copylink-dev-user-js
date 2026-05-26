@@ -83,6 +83,55 @@ const appendChildren = (parent: Node, ...children: Array<Node | null>) => {
   });
 };
 
+const isEditableTarget = (target: EventTarget | null): target is HTMLElement =>
+  target instanceof HTMLInputElement ||
+  target instanceof HTMLTextAreaElement ||
+  (target instanceof HTMLElement && target.isContentEditable);
+
+/**
+ * Prevent site-level shortcut handlers (e.g. Google Sheets) from stealing
+ * clipboard/edit shortcuts while the settings form is focused.
+ *
+ * @param shadow ShadowRoot hosting the settings UI.
+ */
+const guardEditingShortcuts = (shadow: ShadowRoot) => {
+  shadow.addEventListener(
+    "keydown",
+    (event: Event) => {
+      if (!(event instanceof KeyboardEvent)) {
+        return;
+      }
+      const target = event.composedPath()[0] ?? event.target;
+      if (!isEditableTarget(target)) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      const isModifierPressed = event.metaKey || event.ctrlKey;
+      if (!isModifierPressed) {
+        return;
+      }
+      if (["v", "c", "x", "a", "z", "y"].includes(key)) {
+        event.stopPropagation();
+      }
+    },
+    true,
+  );
+
+  shadow.addEventListener(
+    "paste",
+    (event: Event) => {
+      if (!(event instanceof ClipboardEvent)) {
+        return;
+      }
+      const target = event.composedPath()[0] ?? event.target;
+      if (isEditableTarget(target)) {
+        event.stopPropagation();
+      }
+    },
+    true,
+  );
+};
+
 /**
  * Convert a shortcut definition into a display string.
  *
@@ -314,6 +363,7 @@ export const createSettingsPanel = ({
   getEffectiveShortcut,
 }: CreateSettingsPanelOptions) => {
   const shadow = getShadowRoot();
+  guardEditingShortcuts(shadow);
 
   while (shadow.firstChild) {
     shadow.removeChild(shadow.firstChild);
