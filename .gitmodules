@@ -1,4 +1,4 @@
 [submodule "copylink-dev"]
 	path = src/copylink-dev
 	url = https://github.com/wintorse/copylink-dev
-	branch = release/v1.7.0
+	branch = main
