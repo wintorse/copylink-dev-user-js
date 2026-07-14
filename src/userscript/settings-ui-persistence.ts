@@ -60,7 +60,7 @@ export const loadSettings = (
     if (!input) {
       return;
     }
-    input.value = emojiNames[key];
+    input.value = emojiNames[key] ?? DEFAULT_EMOJI_NAMES[key];
     input.placeholder = DEFAULT_EMOJI_NAMES[key];
   });
 

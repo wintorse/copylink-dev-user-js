@@ -8,6 +8,17 @@ import {
   isSettingsLoaded,
   refreshSettingsCache,
 } from "./cache";
+import { getGitHubPullRequestStatus } from "@copylink-dev/shared/githubPullRequestStatus";
+
+const getGitHubPullRequestStatusForPage = (
+  hostname: string,
+  pathname: string,
+) => {
+  const pathParts = pathname.split("/");
+  if (hostname === "github.com" && pathParts[3] === "pull") {
+    return getGitHubPullRequestStatus();
+  }
+};
 
 /**
  * Resolve the emoji name for the current page context.
@@ -19,12 +30,18 @@ export const getEmojiName = async (): Promise<string> => {
     await refreshSettingsCache();
   }
 
+  const { hostname, pathname } = window.location;
+
   const ctx: PageContext = {
     href: window.location.href,
-    hostname: window.location.hostname,
-    pathname: window.location.pathname,
+    hostname,
+    pathname,
     documentBodyId: document.body?.id,
     documentTitle: document.title,
+    githubPullRequestStatus: getGitHubPullRequestStatusForPage(
+      hostname,
+      pathname,
+    ),
     hasRedmineFooter: document
       .querySelector("#footer a")
       ?.textContent?.includes("Redmine"),
