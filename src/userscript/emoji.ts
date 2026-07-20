@@ -14,11 +14,11 @@ import {
 } from "./cache";
 
 /**
- * Check whether the current URL is a GitHub pull request detail page.
+ * Check whether the current URL is a GitHub pull request page.
  *
  * @param hostname Current location hostname.
  * @param pathname Current location pathname.
- * @returns True when the path matches `/owner/repo/pull/<number>` on GitHub.
+ * @returns True when the path matches `/owner/repo/pull/<number>` (optionally followed by subpaths) on GitHub.
  */
 const isGitHubPullRequestDetailPage = (
   hostname: string,
