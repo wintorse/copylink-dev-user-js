@@ -35,7 +35,7 @@ const isGitHubPullRequestDetailPage = (
 };
 
 /**
- * Resolve GitHub pull request status only on pull request detail pages.
+ * Resolve GitHub pull request status only on GitHub pull request pages.
  *
  * @param hostname Current location hostname.
  * @param pathname Current location pathname.
