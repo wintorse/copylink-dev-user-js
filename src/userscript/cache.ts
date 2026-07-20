@@ -34,7 +34,8 @@ let settingsLoaded = false;
  * @returns Nothing.
  */
 export const refreshSettingsCache = async () => {
-  cachedEmojiNames = await GM.getValue("emojiNames", DEFAULT_EMOJI_NAMES);
+  const storedEmojiNames = await GM.getValue("emojiNames", DEFAULT_EMOJI_NAMES);
+  cachedEmojiNames = { ...DEFAULT_EMOJI_NAMES, ...storedEmojiNames };
   cachedCustomRegexes = await GM.getValue("customRegexes", {});
   cachedUserShortcuts = await GM.getValue("userShortcuts", {});
   const storedFormat = await GM.getValue("sheetsRangeFormat", "htmlWithEmoji");
