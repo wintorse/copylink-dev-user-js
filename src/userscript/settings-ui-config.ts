@@ -86,6 +86,26 @@ export const slackFields = [
     placeholder: DEFAULT_EMOJI_NAMES.githubPullRequest,
   },
   {
+    id: "githubDraftPullRequest",
+    label: getMessage("githubDraftPullRequest"),
+    placeholder: DEFAULT_EMOJI_NAMES.githubDraftPullRequest,
+  },
+  {
+    id: "githubOpenPullRequest",
+    label: getMessage("githubOpenPullRequest"),
+    placeholder: DEFAULT_EMOJI_NAMES.githubOpenPullRequest,
+  },
+  {
+    id: "githubMergedPullRequest",
+    label: getMessage("githubMergedPullRequest"),
+    placeholder: DEFAULT_EMOJI_NAMES.githubMergedPullRequest,
+  },
+  {
+    id: "githubClosedPullRequest",
+    label: getMessage("githubClosedPullRequest"),
+    placeholder: DEFAULT_EMOJI_NAMES.githubClosedPullRequest,
+  },
+  {
     id: "githubIssue",
     label: getMessage("githubIssue"),
     placeholder: DEFAULT_EMOJI_NAMES.githubIssue,

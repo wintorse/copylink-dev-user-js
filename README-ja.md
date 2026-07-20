@@ -1,6 +1,6 @@
 [English](./README.md)
 
-# copylink-dev.user.js （UserScript）
+# copylink-dev.user.js (UserScript)
 
 このリポジトリは、[copylink-dev](https://github.com/wintorse/copylink-dev) を UserScript として利用できるようにしたものです。Chrome 拡張機能が使えないブラウザ（例: Safari）でも使用できます。ブラウザ拡張版のソースは git submodule として含まれています。
 
