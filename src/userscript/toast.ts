@@ -2,6 +2,7 @@ import {
   type ToastOptions as SharedToastOptions,
   showToastCore,
 } from "@copylink-dev/shared/ui/toast";
+import { isDescendantFrame } from "./frame-utils";
 import toastCss from "@copylink-dev/public/styles/toast.css?raw";
 
 export type ToastOptions = SharedToastOptions & {
@@ -25,14 +26,13 @@ export const initToastUI = (openSettings: () => void) => {
   window.addEventListener("message", (event: MessageEvent<unknown>) => {
     const data = event.data;
     if (
-      event.source === null ||
-      event.source === window ||
       typeof data !== "object" ||
       data === null ||
       !("type" in data) ||
       data.type !== toastMessageType ||
       !("message" in data) ||
-      typeof data.message !== "string"
+      typeof data.message !== "string" ||
+      !isDescendantFrame(event.source, window)
     ) {
       return;
     }
