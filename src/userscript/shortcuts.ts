@@ -3,6 +3,8 @@ import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import type { Command } from "@copylink-dev/types/types";
 import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
 
+const commandMessageType = "copylink-dev:run-command";
+
 /**
  * Check whether the keyboard event exactly matches a shortcut definition.
  *
@@ -161,6 +163,7 @@ const isValidCommand = (value: string): value is Command =>
 
 /**
  * Register keyboard shortcut listeners and return a refresh controller.
+ * Commands detected in frames are executed by the top-level userscript.
  *
  * @param defaults Default shortcut map.
  * @param commandHandlers Command handlers keyed by command id.
@@ -172,7 +175,30 @@ export const registerShortcuts = async (
 ) => {
   await refreshSettingsCache();
   let effective = buildEffectiveShortcuts(defaults);
+  if (window === window.top) {
+    window.addEventListener("message", (event: MessageEvent<unknown>) => {
+      const data = event.data;
+      if (
+        event.source === null ||
+        event.source === window ||
+        typeof data !== "object" ||
+        data === null ||
+        !("type" in data) ||
+        data.type !== commandMessageType ||
+        !("command" in data) ||
+        typeof data.command !== "string" ||
+        !isValidCommand(data.command)
+      ) {
+        return;
+      }
+      commandHandlers[data.command]().catch(console.error);
+    });
+  }
   const handler = (event: KeyboardEvent) => {
+    // A frame's own userscript and its parent's iframe listener may both run.
+    if (event.defaultPrevented) {
+      return;
+    }
     const match = Object.entries(effective).find(([, shortcut]) =>
       matchesShortcut(event, shortcut),
     );
@@ -182,7 +208,11 @@ export const registerShortcuts = async (
     event.preventDefault();
     const [command] = match;
     if (isValidCommand(command)) {
-      commandHandlers[command]().catch(console.error);
+      if (window === window.top) {
+        commandHandlers[command]().catch(console.error);
+      } else {
+        window.top?.postMessage({ type: commandMessageType, command }, "*");
+      }
     }
   };
   attachDocumentListener(document, handler);
