@@ -2,6 +2,7 @@ import type { Shortcut, ShortcutMap } from "./types";
 import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import type { Command } from "@copylink-dev/types/types";
 import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
+import { isDescendantFrame } from "./frame-utils";
 
 const commandMessageType = "copylink-dev:run-command";
 
@@ -179,15 +180,14 @@ export const registerShortcuts = async (
     window.addEventListener("message", (event: MessageEvent<unknown>) => {
       const data = event.data;
       if (
-        event.source === null ||
-        event.source === window ||
         typeof data !== "object" ||
         data === null ||
         !("type" in data) ||
         data.type !== commandMessageType ||
         !("command" in data) ||
         typeof data.command !== "string" ||
-        !isValidCommand(data.command)
+        !isValidCommand(data.command) ||
+        !isDescendantFrame(event.source, window)
       ) {
         return;
       }
