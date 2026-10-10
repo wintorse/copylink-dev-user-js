@@ -61,7 +61,7 @@ git clone --recursive git@github.com:wintorse/copylink-dev-user-js.git
 
 ## Development
 
-This project uses [pnpm](https://pnpm.io/) as the package manager. Requires Node.js >=24 and pnpm >=10.
+This project uses [pnpm](https://pnpm.io/) as the package manager. Requires Node.js >=26 and pnpm >=12.
 
 ```sh
 # Install dependencies
