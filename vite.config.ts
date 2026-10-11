@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import monkey from "vite-plugin-monkey";
 import path from "node:path";
-import pkg from "./package.json";
+import pkg from "./package.json" with { type: "json" };
 
 const version = pkg.version;
 
@@ -29,6 +29,7 @@ export default defineConfig({
         downloadURL:
           "https://gist.github.com/wintorse/10e2ec0206a0f29522cb06c6dafd2611/raw/copylink-dev.user.js",
         match: ["*://*/*"],
+        exclude: ["*://*/*.xml", "*://*/*.xml?*", "*://*/*.xml#*"],
         grant: ["GM.getValue", "GM.setValue"],
         license: "MIT",
       },
@@ -38,11 +39,14 @@ export default defineConfig({
     alias: [
       {
         find: "@copylink-dev/public",
-        replacement: path.resolve(__dirname, "src/copylink-dev/public"),
+        replacement: path.resolve(
+          import.meta.dirname,
+          "src/copylink-dev/public",
+        ),
       },
       {
         find: "@copylink-dev",
-        replacement: path.resolve(__dirname, "src/copylink-dev/src"),
+        replacement: path.resolve(import.meta.dirname, "src/copylink-dev/src"),
       },
     ],
   },

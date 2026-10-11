@@ -2,11 +2,50 @@ import {
   type ToastOptions as SharedToastOptions,
   showToastCore,
 } from "@copylink-dev/shared/ui/toast";
+import { isDescendantFrame } from "./frame-utils";
 import toastCss from "@copylink-dev/public/styles/toast.css?raw";
 
 export type ToastOptions = SharedToastOptions & {
   actionLabel?: string;
-  onAction?: () => void;
+  openSettings?: boolean;
+};
+
+const toastMessageType = "copylink-dev:show-toast";
+let onOpenSettings: (() => void) | undefined;
+
+/**
+ * Receive toast requests from frames, including cross-origin frames.
+ *
+ * @param openSettings Callback for the toast's settings button.
+ */
+export const initToastUI = (openSettings: () => void) => {
+  if (window !== window.top) {
+    return;
+  }
+  onOpenSettings = openSettings;
+  window.addEventListener("message", (event: MessageEvent<unknown>) => {
+    const data = event.data;
+    if (
+      typeof data !== "object" ||
+      data === null ||
+      !("type" in data) ||
+      data.type !== toastMessageType ||
+      !("message" in data) ||
+      typeof data.message !== "string" ||
+      !isDescendantFrame(event.source, window)
+    ) {
+      return;
+    }
+    const options: ToastOptions = {};
+    if ("durationMs" in data && typeof data.durationMs === "number") {
+      options.durationMs = data.durationMs;
+    }
+    if ("actionLabel" in data && typeof data.actionLabel === "string") {
+      options.actionLabel = data.actionLabel;
+    }
+    options.openSettings = "openSettings" in data && data.openSettings === true;
+    showToast(data.message, options).catch(console.error);
+  });
 };
 
 const extraButtonStyles = `
@@ -36,7 +75,21 @@ export const showToast = async (
   message: string,
   options: ToastOptions = {},
 ) => {
-  const { actionLabel, onAction, ...sharedOptions } = options;
+  const { actionLabel, openSettings, ...sharedOptions } = options;
+  // If not in the top window, post a message to the top window to show the toast.
+  if (window !== window.top) {
+    window.top?.postMessage(
+      {
+        type: toastMessageType,
+        message,
+        durationMs: options.durationMs,
+        actionLabel,
+        openSettings,
+      },
+      "*",
+    );
+    return;
+  }
   await showToastCore(message, document, {
     ...sharedOptions,
     renderContent: (container, text) => {
@@ -48,10 +101,14 @@ export const showToast = async (
       messageNode.textContent = text;
       container.appendChild(messageNode);
 
-      if (actionLabel !== undefined && actionLabel !== "" && onAction) {
+      if (
+        actionLabel !== undefined &&
+        actionLabel !== "" &&
+        openSettings === true
+      ) {
         const actionBtn = document.createElement("button");
         actionBtn.textContent = actionLabel;
-        actionBtn.addEventListener("click", () => onAction());
+        actionBtn.addEventListener("click", () => onOpenSettings?.());
         container.appendChild(actionBtn);
       }
     },

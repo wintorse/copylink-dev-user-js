@@ -1,29 +1,33 @@
 {
   "name": "copylink-dev-user-js",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "typecheck": "tsc -b",
     "lint": "oxlint -c=.oxlintrc.json --type-aware",
     "lint:fix": "oxlint -c=.oxlintrc.json --fix",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check"
   },
   "devDependencies": {
-    "@types/tampermonkey": "^5.0.5",
-    "oxfmt": "^0.61.0",
-    "oxlint": "^1.76.0",
-    "oxlint-tsgolint": "^7.0.2001",
+    "@types/node": "^26.6.4",
+    "@types/tampermonkey": "^5.5.0",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
+    "oxlint-tsgolint": "^7.0.2003",
     "typescript": "^7.0.2",
-    "vite": "^8.1.5",
-    "vite-plugin-monkey": "^8.1.0"
+    "vite": "^8.3.3",
+    "vite-plugin-monkey": "^8.1.1"
   },
-  "engines": {
-    "node": ">=24",
-    "pnpm": ">=10"
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.11.1"
+    }
   },
-  "packageManager": "pnpm@11.15.1"
+  "packageManager": "pnpm@12.10.1+sha512.ukCjfrGjcNYP6oxM8dNkwTvMzvUY6YrSvO6VT1OdONo3RY5YJho/pV4GUjRQ6g//+fSXsTW+QfLBXBZCusrObA=="
 }
