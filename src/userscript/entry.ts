@@ -75,6 +75,10 @@ const copyHandlers: Record<Command, () => Promise<void>> = {
 };
 
 const init = async () => {
+  // Skip initialization for XML files.
+  if (/\.xml$/i.test(window.location.pathname)) {
+    return;
+  }
   initToastUI(() => {
     ensureSettingsController()
       .then((controller) => controller.show())
