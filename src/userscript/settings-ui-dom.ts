@@ -153,7 +153,11 @@ export const formatShortcut = (shortcut: Shortcut) => {
   if (shortcut.meta) {
     parts.push(isMac ? "⌘" : "Win");
   }
-  parts.push(shortcut.key.toUpperCase());
+  if (
+    !["control", "alt", "shift", "meta"].includes(shortcut.key.toLowerCase())
+  ) {
+    parts.push(shortcut.key.toUpperCase());
+  }
   return parts.join(" + ");
 };
 

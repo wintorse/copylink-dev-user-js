@@ -243,6 +243,11 @@ test("shortcut recorders capture keys without triggering page handlers", async (
   for (const command of ["copy-title", "copy-google-sheets-range"]) {
     const shortcut = page.locator(`#shortcut-${command}`);
     for (const { keys, value } of [
+      { keys: "Shift", value: "Shift" },
+      { keys: "Control", value: "Ctrl" },
+      { keys: "Alt", value: "Alt" },
+      { keys: "Meta", value: /^(⌘|Win)$/ },
+      { keys: "Control+Shift", value: "Ctrl + Shift" },
       { keys: "Control+Shift+y", value: "Ctrl + Shift + Y" },
       { keys: "Alt+k", value: "Alt + K" },
       { keys: "g", value: "G" },
