@@ -70,3 +70,20 @@ pnpm install
 # Build
 pnpm run build
 ```
+
+### E2E tests
+
+```sh
+# Install Chromium once (add --with-deps on Linux CI)
+pnpm exec playwright install chromium
+
+# Build the UserScript and run the tests
+pnpm test
+```
+
+Tests in `tests/e2e` run the built UserScript in Chromium against local fixtures.
+The GM storage API is mocked; clipboard writes and reads use the real browser API.
+Tests cover copying, settings, persistence, iframe shortcuts, and XML exclusion.
+They do not cover installation or execution through Tampermonkey or Safari Userscripts.
+Results are written to `test-results/results.json`, with screenshots and traces on failure.
+Use `pnpm test --headed` to watch the browser or `pnpm test --grep "shortcut"` to filter tests.

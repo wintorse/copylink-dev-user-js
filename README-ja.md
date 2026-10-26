@@ -69,3 +69,20 @@ pnpm install
 # ビルド
 pnpm run build
 ```
+
+### E2E テスト
+
+```sh
+# 初回のみ Chromium をインストール（Linux の CI では --with-deps を追加）
+pnpm exec playwright install chromium
+
+# UserScript をビルドしてテストを実行
+pnpm test
+```
+
+`tests/e2e` のテストは、ビルドした UserScript を Chromium でローカルのテストページに読み込んで実行します。
+GM ストレージ API はモックし、クリップボードの読み書きには実際のブラウザ API を使用します。
+コピー、設定画面、設定の保存・再読込、iframe 内のショートカット、XML の除外を検証します。
+Tampermonkey や Safari Userscripts によるインストール・実行は検証対象に含みません。
+結果は `test-results/results.json` に出力され、失敗時にはスクリーンショットとトレースも保存されます。
+ブラウザを表示する場合は `pnpm test --headed`、絞り込む場合は `pnpm test --grep "shortcut"` を使用してください。
