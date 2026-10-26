@@ -190,6 +190,79 @@ test("a shortcut inside an iframe copies the top page and shows one toast", asyn
   await expect(frame.locator("#copylink-dev-settings-host")).toHaveCount(0);
 });
 
+test("Alt-modified shortcuts save base keys and work after reload", async ({
+  page,
+  gmStorage,
+  shortcutModifier,
+}) => {
+  // Given: Settings are open and Option+L produces layout-specific characters.
+  await gotoFixture(page);
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  const shortcuts = [
+    {
+      command: "copy-link",
+      event: { key: "¬", code: "KeyL", altKey: true, shiftKey: false },
+      value: "Alt + L",
+      text: fixtureTitle,
+    },
+    {
+      command: "copy-link-for-slack",
+      event: { key: "Ò", code: "KeyL", altKey: true, shiftKey: true },
+      value: "Alt + Shift + L",
+      text: `[${fixtureTitle}](${page.url()})`,
+    },
+  ];
+
+  // When: Both shortcuts are recorded and saved.
+  for (const { command, event, value } of shortcuts) {
+    const input = panel.locator(`#shortcut-${command}`);
+    await input.focus();
+    await input.dispatchEvent("keydown", event);
+    await expect(input).toHaveValue(value);
+  }
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(panel).toBeHidden();
+
+  // Then: Storage contains the base letter rather than the generated character.
+  for (const { command, event } of shortcuts) {
+    expect(gmStorage.get("userShortcuts")).toMatchObject({
+      [command]: {
+        key: "l",
+        ctrl: false,
+        alt: true,
+        shift: event.shiftKey,
+        meta: false,
+      },
+    });
+  }
+
+  // When: Settings are reopened after reloading the page.
+  await page.reload();
+  await page
+    .locator("#copylink-dev-settings-host")
+    .waitFor({ state: "attached" });
+  await openSettings(page, `${shortcutModifier}+t`);
+
+  // Then: Both shortcuts retain their base-key labels.
+  for (const { command, value } of shortcuts) {
+    await expect(panel.locator(`#shortcut-${command}`)).toHaveValue(value);
+  }
+  await panel.getByRole("button", { name: "×", exact: true }).click();
+
+  // When: The browser reports the transformed characters outside settings.
+  for (const { event, text } of shortcuts) {
+    await page.bringToFront();
+    await page.evaluate(() => navigator.clipboard.writeText("e2e sentinel"));
+    await page.locator("#editor").dispatchEvent("keydown", event);
+
+    // Then: The saved shortcut executes the corresponding copy command.
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(text);
+  }
+});
+
 test("settings and the save button fit a narrow viewport", async ({
   page,
   shortcutModifier,
@@ -243,6 +316,11 @@ test("shortcut recorders capture keys without triggering page handlers", async (
   for (const command of ["copy-title", "copy-google-sheets-range"]) {
     const shortcut = page.locator(`#shortcut-${command}`);
     for (const { keys, value } of [
+      { keys: "Shift", value: "Shift" },
+      { keys: "Control", value: "Ctrl" },
+      { keys: "Alt", value: "Alt" },
+      { keys: "Meta", value: /^(⌘|Win)$/ },
+      { keys: "Control+Shift", value: "Ctrl + Shift" },
       { keys: "Control+Shift+y", value: "Ctrl + Shift + Y" },
       { keys: "Alt+k", value: "Alt + K" },
       { keys: "g", value: "G" },
@@ -258,6 +336,35 @@ test("shortcut recorders capture keys without triggering page handlers", async (
           window: document.body.dataset.windowKeydownTriggered,
         })),
       ).toEqual({ document: undefined, window: undefined });
+    }
+
+    for (const { event, value } of [
+      {
+        event: { key: "¬", code: "KeyL", altKey: true },
+        value: "Alt + L",
+      },
+      {
+        event: { key: "Ò", code: "KeyL", altKey: true, shiftKey: true },
+        value: "Alt + Shift + L",
+      },
+      {
+        event: { key: "¡", code: "Digit1", altKey: true },
+        value: "Alt + 1",
+      },
+      {
+        event: { key: "q", code: "KeyA", ctrlKey: true },
+        value: "Ctrl + Q",
+      },
+      {
+        event: { key: "Enter", code: "Enter", altKey: true },
+        value: "Alt + ENTER",
+      },
+    ]) {
+      // When: The browser reports a generated character and its physical key.
+      await shortcut.dispatchEvent("keydown", event);
+
+      // Then: Alt-modified letters/digits use their base key; other keys keep their labels.
+      await expect(shortcut).toHaveValue(value);
     }
   }
 
