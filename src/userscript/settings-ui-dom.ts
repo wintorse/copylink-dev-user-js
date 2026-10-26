@@ -84,8 +84,9 @@ const appendChildren = (parent: Node, ...children: Array<Node | null>) => {
 };
 
 const isEditableTarget = (target: EventTarget | null): target is HTMLElement =>
-  target instanceof HTMLInputElement ||
-  target instanceof HTMLTextAreaElement ||
+  // Readonly recorders capture keys and stop propagation in their own listeners.
+  (target instanceof HTMLInputElement && !target.readOnly) ||
+  (target instanceof HTMLTextAreaElement && !target.readOnly) ||
   (target instanceof HTMLElement && target.isContentEditable);
 
 /**
@@ -195,6 +196,7 @@ const createShortcutInput = (
 
   input.addEventListener("keydown", (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const shortcut: Shortcut = {
       key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
       ctrl: e.ctrlKey,
@@ -267,6 +269,7 @@ const createSheetsRangeShortcutRow = (
 
   input.addEventListener("keydown", (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const shortcut: Shortcut = {
       key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
       ctrl: e.ctrlKey,
