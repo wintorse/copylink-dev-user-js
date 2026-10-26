@@ -84,8 +84,9 @@ const appendChildren = (parent: Node, ...children: Array<Node | null>) => {
 };
 
 const isEditableTarget = (target: EventTarget | null): target is HTMLElement =>
-  target instanceof HTMLInputElement ||
-  target instanceof HTMLTextAreaElement ||
+  // Readonly shortcut recorders need to receive editing key combinations too.
+  (target instanceof HTMLInputElement && !target.readOnly) ||
+  (target instanceof HTMLTextAreaElement && !target.readOnly) ||
   (target instanceof HTMLElement && target.isContentEditable);
 
 /**
