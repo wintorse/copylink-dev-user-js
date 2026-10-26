@@ -3,7 +3,7 @@ import {
   copyTextLinkCore,
 } from "@copylink-dev/shared/clipboard/copyTextLinkCore";
 import { type MessageId, getMessage, i18nMessages } from "./i18n";
-import { type ToastOptions, showToast } from "./toast";
+import { type ToastOptions, initToastUI, showToast } from "./toast";
 import type { Command } from "@copylink-dev/types/types";
 import type { SettingsController } from "./types";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
@@ -42,11 +42,7 @@ const ensureSettingsController = async () => {
  */
 const toastWithSettings = (): ToastOptions => ({
   actionLabel: getMessage("settingsButton"),
-  onAction: () => {
-    ensureSettingsController()
-      .then((controller) => controller.show())
-      .catch(console.error);
-  },
+  openSettings: true,
 });
 
 const isMessageId = (key: string): key is MessageId => key in i18nMessages.en;
@@ -79,12 +75,23 @@ const copyHandlers: Record<Command, () => Promise<void>> = {
 };
 
 const init = async () => {
+  // Skip initialization for XML files.
+  if (/\.xml$/i.test(window.location.pathname)) {
+    return;
+  }
+  initToastUI(() => {
+    ensureSettingsController()
+      .then((controller) => controller.show())
+      .catch(console.error);
+  });
   const shortcutController = await registerShortcuts(
     defaultShortcuts,
     copyHandlers,
   );
   shortcutControllerRef = shortcutController;
-  await ensureSettingsController();
+  if (window === window.top) {
+    await ensureSettingsController();
+  }
 };
 
 init().catch(console.error);

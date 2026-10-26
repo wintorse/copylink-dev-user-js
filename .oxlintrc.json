@@ -150,7 +150,7 @@
   },
   "overrides": [
     {
-      "files": ["vite.config.[jt]s"],
+      "files": ["vite.config.[jt]s", "playwright.config.[jt]s"],
       "rules": {
         "import/no-default-export": "off"
       }
