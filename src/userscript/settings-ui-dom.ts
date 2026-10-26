@@ -6,6 +6,7 @@ import { shortcutCommands, slackFields } from "./settings-ui-config";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
 import { getMessage } from "./i18n";
+import { getShortcutKey } from "./shortcuts-utils";
 import { isMac } from "./constants";
 import settingsStyleText from "./settings-ui.css?raw";
 
@@ -202,7 +203,7 @@ const createShortcutInput = (
     e.preventDefault();
     e.stopPropagation();
     const shortcut: Shortcut = {
-      key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
+      key: getShortcutKey(e),
       ctrl: e.ctrlKey,
       shift: e.shiftKey,
       alt: e.altKey,
@@ -275,7 +276,7 @@ const createSheetsRangeShortcutRow = (
     e.preventDefault();
     e.stopPropagation();
     const shortcut: Shortcut = {
-      key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
+      key: getShortcutKey(e),
       ctrl: e.ctrlKey,
       shift: e.shiftKey,
       alt: e.altKey,

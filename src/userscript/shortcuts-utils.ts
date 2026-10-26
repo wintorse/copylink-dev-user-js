@@ -48,7 +48,25 @@ export const syncFrameShortcuts = (
 };
 
 /**
- * Check whether the keyboard event exactly matches a shortcut definition.
+ * Resolve a shortcut key without Alt-generated characters on letters/digits.
+ *
+ * @param event Keyboard event to normalize.
+ * @returns Base key for Alt-modified letters/digits, otherwise the event key.
+ */
+export const getShortcutKey = (event: KeyboardEvent): string => {
+  if (event.altKey) {
+    if (/^Key[A-Z]$/.test(event.code)) {
+      return event.code.slice(3).toLowerCase();
+    }
+    if (/^Digit[0-9]$/.test(event.code)) {
+      return event.code.slice(5);
+    }
+  }
+  return event.key.length === 1 ? event.key.toLowerCase() : event.key;
+};
+
+/**
+ * Check whether the keyboard event matches a shortcut definition.
  *
  * @param event Keyboard event to evaluate.
  * @param shortcut Shortcut definition.
@@ -57,7 +75,9 @@ export const syncFrameShortcuts = (
 export const matchesShortcut = (event: KeyboardEvent, shortcut: Shortcut) => {
   const normalizedKey = shortcut.key.toLowerCase();
   return (
-    event.key.toLowerCase() === normalizedKey &&
+    (getShortcutKey(event).toLowerCase() === normalizedKey ||
+      // Preserve shortcuts saved with Alt-generated characters before normalization.
+      event.key.toLowerCase() === normalizedKey) &&
     event.ctrlKey === shortcut.ctrl &&
     event.shiftKey === shortcut.shift &&
     event.altKey === shortcut.alt &&
