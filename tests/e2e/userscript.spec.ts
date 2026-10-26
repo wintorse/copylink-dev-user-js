@@ -225,22 +225,52 @@ test("XML pages skip userscript initialization", async ({
   expect(gmStorage.size).toBe(0);
 });
 
-test("shortcut recorders accept Ctrl+Shift+Y", async ({
+test("shortcut recorders capture keys without triggering page handlers", async ({
   page,
   shortcutModifier,
 }) => {
-  // Given: The settings panel is open with its shortcut recorders.
+  // Given: Settings are open and the page listens for keydown events.
   await gotoFixture(page);
   await openSettings(page, `${shortcutModifier}+t`);
+  await page.evaluate(() => {
+    document.addEventListener("keydown", () => {
+      document.body.dataset.documentKeydownTriggered = "true";
+    });
+    window.addEventListener("keydown", () => {
+      document.body.dataset.windowKeydownTriggered = "true";
+    });
+  });
   for (const command of ["copy-title", "copy-google-sheets-range"]) {
     const shortcut = page.locator(`#shortcut-${command}`);
+    for (const { keys, value } of [
+      { keys: "Control+Shift+y", value: "Ctrl + Shift + Y" },
+      { keys: "Alt+k", value: "Alt + K" },
+      { keys: "g", value: "G" },
+    ]) {
+      // When: Keys are pressed in the shortcut recorder.
+      await shortcut.press(keys);
 
-    // When: Ctrl+Shift+Y is pressed in the shortcut recorder.
-    await shortcut.press("Control+Shift+y");
-
-    // Then: The recorder displays the captured key combination.
-    await expect(shortcut).toHaveValue("Ctrl + Shift + Y");
+      // Then: The recorder captures the keys without triggering page handlers.
+      await expect(shortcut).toHaveValue(value);
+      expect(
+        await page.evaluate(() => ({
+          document: document.body.dataset.documentKeydownTriggered,
+          window: document.body.dataset.windowKeydownTriggered,
+        })),
+      ).toEqual({ document: undefined, window: undefined });
+    }
   }
+
+  // When: The key combination is pressed in an input outside settings.
+  await page.locator("#editor").press("Control+Shift+y");
+
+  // Then: Both page handlers receive keydown events normally.
+  expect(
+    await page.evaluate(() => ({
+      document: document.body.dataset.documentKeydownTriggered,
+      window: document.body.dataset.windowKeydownTriggered,
+    })),
+  ).toEqual({ document: "true", window: "true" });
 });
 
 test("editing shortcuts stay inside editable settings fields", async ({
