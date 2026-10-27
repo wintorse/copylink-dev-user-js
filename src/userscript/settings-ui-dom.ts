@@ -1,7 +1,12 @@
 import {
   CUSTOM_REGEX_KEYS,
   DEFAULT_EMOJI_NAMES,
+  GITHUB_PULL_REQUEST_STATUS_EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
+import {
+  buildCustomRegexes,
+  normalizeEmojiValue,
+} from "@copylink-dev/shared/popup/emojiSettings";
 import {
   isCustomRegexKey,
   shortcutCommands,
@@ -9,7 +14,6 @@ import {
 } from "./settings-ui-config";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
-import { buildCustomRegexes } from "@copylink-dev/shared/popup/emojiSettings";
 import { getMessage } from "./i18n";
 import { getShortcutKey } from "./shortcuts-utils";
 import { isMac } from "./constants";
@@ -297,6 +301,26 @@ const createSheetsRangeShortcutRow = (
   return wrapper;
 };
 
+/**
+ * Show the common PR emoji as the placeholder for inherited status values.
+ *
+ * @param root Settings root containing the emoji fields.
+ */
+export const refreshStatusEmojiPlaceholders = (root: ParentNode) => {
+  const commonValue =
+    root.querySelector<HTMLInputElement>("#githubPullRequest")?.value ?? "";
+  const placeholder = normalizeEmojiValue(
+    commonValue,
+    DEFAULT_EMOJI_NAMES.githubPullRequest,
+  );
+  for (const key of GITHUB_PULL_REQUEST_STATUS_EMOJI_KEYS) {
+    const input = root.querySelector<HTMLInputElement>(`#${key}`);
+    if (input) {
+      input.placeholder = placeholder;
+    }
+  }
+};
+
 const createEmojiFields = () => {
   const section = createElement("div", { className: "section" });
 
@@ -309,6 +333,11 @@ const createEmojiFields = () => {
     input.placeholder =
       index === 0 ? getMessage("emojiPlaceholder") : field.placeholder;
     input.dataset.emojiKey = field.id;
+    if (field.id === "githubPullRequest") {
+      input.addEventListener("input", () =>
+        refreshStatusEmojiPlaceholders(section),
+      );
+    }
 
     appendChildren(label, input);
     appendChildren(section, label);
