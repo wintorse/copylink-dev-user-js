@@ -10,6 +10,7 @@ export { expect } from "@playwright/test";
 
 export const fixtureOrigin = "https://copylink-e2e.test";
 export const fixtureTitle = 'Copylink E2E & <Test> "日本語"';
+export const fixtureMarkdownTitle = 'Copylink E2E \\& \\<Test\\> "日本語"';
 
 type Fixtures = {
   gmStorage: Map<string, unknown>;
