@@ -3,7 +3,11 @@ import {
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
-import { SheetsRangeFormatSelectId, formatShortcut } from "./settings-ui-dom";
+import {
+  SheetsRangeFormatSelectId,
+  formatShortcut,
+  validateCustomRegexInput,
+} from "./settings-ui-dom";
 import {
   getCachedCustomRegexes,
   getCachedEmojiNames,
@@ -71,6 +75,7 @@ export const loadSettings = (
     );
     if (input) {
       input.value = regexes[key] ?? "";
+      validateCustomRegexInput(input);
     }
   });
 
@@ -130,6 +135,14 @@ export const saveSettings = async ({
   const shortcutInputs = Array.from(
     root.querySelectorAll<HTMLInputElement>("[data-command-key]"),
   );
+
+  const invalidRegexInputs = regexInputs.filter(
+    (input) => !validateCustomRegexInput(input),
+  );
+  if (invalidRegexInputs.length > 0) {
+    invalidRegexInputs[0].focus();
+    return;
+  }
 
   // Process emoji name inputs.
   for (const input of emojiInputs) {

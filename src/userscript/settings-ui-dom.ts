@@ -2,9 +2,14 @@ import {
   CUSTOM_REGEX_KEYS,
   DEFAULT_EMOJI_NAMES,
 } from "@copylink-dev/shared/constants";
-import { shortcutCommands, slackFields } from "./settings-ui-config";
+import {
+  isCustomRegexKey,
+  shortcutCommands,
+  slackFields,
+} from "./settings-ui-config";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
+import { buildCustomRegexes } from "@copylink-dev/shared/popup/emojiSettings";
 import { getMessage } from "./i18n";
 import { getShortcutKey } from "./shortcuts-utils";
 import { isMac } from "./constants";
@@ -312,6 +317,32 @@ const createEmojiFields = () => {
   return section;
 };
 
+/**
+ * Validate a regex field and update its inline error message.
+ *
+ * @param input Custom regex field to validate.
+ * @returns Whether the pattern is valid.
+ */
+export const validateCustomRegexInput = (input: HTMLInputElement): boolean => {
+  const key = input.dataset.regexKey;
+  if (!isCustomRegexKey(key)) {
+    return true;
+  }
+  let errorMessage = "";
+  try {
+    buildCustomRegexes({ [key]: input.value });
+  } catch {
+    errorMessage = getMessage("invalidCustomRegex");
+  }
+  input.setCustomValidity(errorMessage);
+  input.setAttribute("aria-invalid", String(errorMessage.length > 0));
+  const error = input.nextElementSibling;
+  if (error instanceof HTMLElement) {
+    error.textContent = errorMessage;
+  }
+  return errorMessage.length === 0;
+};
+
 const createCustomSitesFields = () => {
   const section = createElement("div", { className: "section" });
 
@@ -326,7 +357,16 @@ const createCustomSitesFields = () => {
     }) as HTMLInputElement;
     regexInput.placeholder = "www\\.example\\.com";
     regexInput.dataset.regexKey = CUSTOM_REGEX_KEYS[i - 1];
-    appendChildren(regexLabel, regexInput);
+    const error = createElement("span", {
+      id: `${regexInput.id}-error`,
+      className: "custom-regex-error",
+    });
+    error.setAttribute("role", "alert");
+    regexInput.setAttribute("aria-describedby", error.id);
+    regexInput.addEventListener("input", () => {
+      validateCustomRegexInput(regexInput);
+    });
+    appendChildren(regexLabel, regexInput, error);
 
     const emojiLabel = createElement("label", {
       text: getMessage("customWebsiteEmoji", { num: i.toString() }),
