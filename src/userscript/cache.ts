@@ -1,13 +1,9 @@
-import {
-  type CUSTOM_REGEX_KEYS,
-  DEFAULT_EMOJI_NAMES,
-} from "@copylink-dev/shared/constants";
 import type {
   CustomRegexes,
-  EmojiName,
   EmojiNameRecord,
   LinkFormat,
 } from "@copylink-dev/types/types";
+import type { CUSTOM_REGEX_KEYS } from "@copylink-dev/shared/constants";
 import { isSheetsRangeFormat } from "./settings-ui-config";
 
 export type UserShortcuts = Record<string, ShortcutDefinition>;
@@ -20,7 +16,7 @@ export type ShortcutDefinition = {
   meta: boolean;
 };
 
-let cachedEmojiNames: EmojiNameRecord = { ...DEFAULT_EMOJI_NAMES };
+let cachedEmojiNames: Partial<EmojiNameRecord> = {};
 let cachedCustomRegexes: Partial<
   Record<(typeof CUSTOM_REGEX_KEYS)[number], string>
 > = {};
@@ -34,8 +30,7 @@ let settingsLoaded = false;
  * @returns Nothing.
  */
 export const refreshSettingsCache = async () => {
-  const storedEmojiNames = await GM.getValue("emojiNames", DEFAULT_EMOJI_NAMES);
-  cachedEmojiNames = { ...DEFAULT_EMOJI_NAMES, ...storedEmojiNames };
+  cachedEmojiNames = await GM.getValue("emojiNames", {});
   cachedCustomRegexes = await GM.getValue("customRegexes", {});
   cachedUserShortcuts = await GM.getValue("userShortcuts", {});
   const storedFormat = await GM.getValue("sheetsRangeFormat", "htmlWithEmoji");
@@ -71,17 +66,15 @@ export const updateCustomRegex = async (
 };
 
 /**
- * Update one emoji name and persist it to storage.
+ * Replace emoji overrides so omitted PR status values can inherit the common emoji.
  *
- * @param key Emoji name key.
- * @param value Emoji text value.
+ * @param emojiNames Normalized emoji overrides.
  * @returns Nothing.
  */
-export const updateEmojiName = async (
-  key: keyof EmojiNameRecord,
-  value: EmojiName,
+export const updateEmojiNames = async (
+  emojiNames: Partial<EmojiNameRecord>,
 ) => {
-  cachedEmojiNames[key] = value;
+  cachedEmojiNames = emojiNames;
   await GM.setValue("emojiNames", cachedEmojiNames);
 };
 

@@ -3,7 +3,16 @@ import {
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
-import { SheetsRangeFormatSelectId, formatShortcut } from "./settings-ui-dom";
+import {
+  SheetsRangeFormatSelectId,
+  formatShortcut,
+  refreshStatusEmojiPlaceholders,
+  validateCustomRegexInput,
+} from "./settings-ui-dom";
+import {
+  buildEmojiNames,
+  getInitialEmojiValues,
+} from "@copylink-dev/shared/popup/emojiSettings";
 import {
   getCachedCustomRegexes,
   getCachedEmojiNames,
@@ -11,7 +20,7 @@ import {
   getUserShortcuts,
   refreshSettingsCache,
   updateCustomRegex,
-  updateEmojiName,
+  updateEmojiNames,
   updateSheetsRangeFormat,
   updateShortcut,
 } from "./cache";
@@ -22,9 +31,9 @@ import {
   isShortcut,
   shortcutCommands,
 } from "./settings-ui-config";
+import type { EmojiKeys } from "@copylink-dev/types/types";
 import type { ShortcutMap } from "./types";
 import { getMessage } from "./i18n";
-import { normalizeEmojiValue } from "@copylink-dev/shared/popup/emojiSettings";
 import { showToast } from "./toast";
 
 /**
@@ -54,15 +63,16 @@ export const loadSettings = (
     }
   });
 
-  const emojiNames = getCachedEmojiNames();
+  const emojiValues = getInitialEmojiValues(getCachedEmojiNames());
   EMOJI_KEYS.forEach((key) => {
     const input = root.querySelector<HTMLInputElement>(`#${key}`);
     if (!input) {
       return;
     }
-    input.value = emojiNames[key] ?? DEFAULT_EMOJI_NAMES[key];
+    input.value = emojiValues[key];
     input.placeholder = DEFAULT_EMOJI_NAMES[key];
   });
+  refreshStatusEmojiPlaceholders(root);
 
   const regexes = getCachedCustomRegexes();
   CUSTOM_REGEX_KEYS.forEach((key, idx) => {
@@ -71,6 +81,7 @@ export const loadSettings = (
     );
     if (input) {
       input.value = regexes[key] ?? "";
+      validateCustomRegexInput(input);
     }
   });
 
@@ -131,18 +142,24 @@ export const saveSettings = async ({
     root.querySelectorAll<HTMLInputElement>("[data-command-key]"),
   );
 
+  const invalidRegexInputs = regexInputs.filter(
+    (input) => !validateCustomRegexInput(input),
+  );
+  if (invalidRegexInputs.length > 0) {
+    invalidRegexInputs[0].focus();
+    return;
+  }
+
   // Process emoji name inputs.
+  const emojiValues: Partial<Record<EmojiKeys, string>> = {};
   for (const input of emojiInputs) {
     const emojiKey = input.dataset.emojiKey;
     if (!isEmojiKey(emojiKey)) {
       continue;
     }
-    const normalized = normalizeEmojiValue(
-      input.value,
-      DEFAULT_EMOJI_NAMES[emojiKey],
-    );
-    await updateEmojiName(emojiKey, normalized);
+    emojiValues[emojiKey] = input.value;
   }
+  await updateEmojiNames(buildEmojiNames(emojiValues));
 
   // Process custom regex inputs.
   for (const input of regexInputs) {
