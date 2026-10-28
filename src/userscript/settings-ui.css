@@ -172,6 +172,21 @@
   gap: 8px;
 }
 
+.custom-regex-error {
+  display: block;
+  margin-top: 4px;
+  color: #b91c1c;
+  font-size: 0.9em;
+}
+
+.custom-regex-error:empty {
+  display: none;
+}
+
+.settings-content input[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+
 .repo-link-section {
   padding: 16px 20px 8px;
   text-align: center;

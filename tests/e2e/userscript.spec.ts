@@ -1,6 +1,7 @@
 import {
   copyWithShortcut,
   expect,
+  fixtureMarkdownTitle,
   fixtureOrigin,
   fixtureTitle,
   gotoFixture,
@@ -63,7 +64,7 @@ test("copy-link-for-slack copies Markdown text and HTML", async ({
   const payload = await copyWithShortcut(
     page,
     `${shortcutModifier}+Shift+l`,
-    `[${fixtureTitle}](${page.url()})`,
+    `[${fixtureMarkdownTitle}](${page.url()})`,
     "リンクをクリップボードにコピーしました",
   );
 
@@ -157,7 +158,7 @@ test("saved shortcuts, format, and custom emoji survive a reload", async ({
   const payload = await copyWithShortcut(
     page,
     `${shortcutModifier}+Shift+l`,
-    `[${fixtureTitle}](${page.url()})`,
+    `[${fixtureMarkdownTitle}](${page.url()})`,
     "リンクをクリップボードにコピーしました",
   );
 
@@ -210,7 +211,7 @@ test("Alt-modified shortcuts save base keys and work after reload", async ({
       command: "copy-link-for-slack",
       event: { key: "Ò", code: "KeyL", altKey: true, shiftKey: true },
       value: "Alt + Shift + L",
-      text: `[${fixtureTitle}](${page.url()})`,
+      text: `[${fixtureMarkdownTitle}](${page.url()})`,
     },
   ];
 

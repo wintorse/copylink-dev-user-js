@@ -1,8 +1,17 @@
 import {
   CUSTOM_REGEX_KEYS,
   DEFAULT_EMOJI_NAMES,
+  GITHUB_PULL_REQUEST_STATUS_EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
-import { shortcutCommands, slackFields } from "./settings-ui-config";
+import {
+  buildCustomRegexes,
+  normalizeEmojiValue,
+} from "@copylink-dev/shared/popup/emojiSettings";
+import {
+  isCustomRegexKey,
+  shortcutCommands,
+  slackFields,
+} from "./settings-ui-config";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
 import { getMessage } from "./i18n";
@@ -292,6 +301,26 @@ const createSheetsRangeShortcutRow = (
   return wrapper;
 };
 
+/**
+ * Show the common PR emoji as the placeholder for inherited status values.
+ *
+ * @param root Settings root containing the emoji fields.
+ */
+export const refreshStatusEmojiPlaceholders = (root: ParentNode) => {
+  const commonValue =
+    root.querySelector<HTMLInputElement>("#githubPullRequest")?.value ?? "";
+  const placeholder = normalizeEmojiValue(
+    commonValue,
+    DEFAULT_EMOJI_NAMES.githubPullRequest,
+  );
+  for (const key of GITHUB_PULL_REQUEST_STATUS_EMOJI_KEYS) {
+    const input = root.querySelector<HTMLInputElement>(`#${key}`);
+    if (input) {
+      input.placeholder = placeholder;
+    }
+  }
+};
+
 const createEmojiFields = () => {
   const section = createElement("div", { className: "section" });
 
@@ -304,12 +333,43 @@ const createEmojiFields = () => {
     input.placeholder =
       index === 0 ? getMessage("emojiPlaceholder") : field.placeholder;
     input.dataset.emojiKey = field.id;
+    if (field.id === "githubPullRequest") {
+      input.addEventListener("input", () =>
+        refreshStatusEmojiPlaceholders(section),
+      );
+    }
 
     appendChildren(label, input);
     appendChildren(section, label);
   });
 
   return section;
+};
+
+/**
+ * Validate a regex field and update its inline error message.
+ *
+ * @param input Custom regex field to validate.
+ * @returns Whether the pattern is valid.
+ */
+export const validateCustomRegexInput = (input: HTMLInputElement): boolean => {
+  const key = input.dataset.regexKey;
+  if (!isCustomRegexKey(key)) {
+    return true;
+  }
+  let errorMessage = "";
+  try {
+    buildCustomRegexes({ [key]: input.value });
+  } catch {
+    errorMessage = getMessage("invalidCustomRegex");
+  }
+  input.setCustomValidity(errorMessage);
+  input.setAttribute("aria-invalid", String(errorMessage.length > 0));
+  const error = input.nextElementSibling;
+  if (error instanceof HTMLElement) {
+    error.textContent = errorMessage;
+  }
+  return errorMessage.length === 0;
 };
 
 const createCustomSitesFields = () => {
@@ -326,7 +386,16 @@ const createCustomSitesFields = () => {
     }) as HTMLInputElement;
     regexInput.placeholder = "www\\.example\\.com";
     regexInput.dataset.regexKey = CUSTOM_REGEX_KEYS[i - 1];
-    appendChildren(regexLabel, regexInput);
+    const error = createElement("span", {
+      id: `${regexInput.id}-error`,
+      className: "custom-regex-error",
+    });
+    error.setAttribute("role", "alert");
+    regexInput.setAttribute("aria-describedby", error.id);
+    regexInput.addEventListener("input", () => {
+      validateCustomRegexInput(regexInput);
+    });
+    appendChildren(regexLabel, regexInput, error);
 
     const emojiLabel = createElement("label", {
       text: getMessage("customWebsiteEmoji", { num: i.toString() }),
