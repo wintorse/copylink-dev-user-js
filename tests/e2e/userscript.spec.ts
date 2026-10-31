@@ -191,6 +191,145 @@ test("a shortcut inside an iframe copies the top page and shows one toast", asyn
   await expect(frame.locator("#copylink-dev-settings-host")).toHaveCount(0);
 });
 
+test("a dynamically added cross-origin iframe receives updated shortcuts", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: A cross-origin iframe is added and its default title shortcut works.
+  await page.route("https://frame.copylink-e2e.test/frame.html", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: '<html><body><input id="editor"></body></html>',
+    }),
+  );
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    const frame = document.createElement("iframe");
+    frame.title = "Cross-origin frame";
+    frame.src = "https://frame.copylink-e2e.test/frame.html";
+    document.body.appendChild(frame);
+  });
+  const frame = page.frameLocator('iframe[title="Cross-origin frame"]');
+  const editor = frame.locator("#editor");
+  await expect(editor).toBeVisible();
+  await copyWithShortcut(
+    page,
+    `${shortcutModifier}+t`,
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Observe synchronization so the next keypress cannot race the update.
+  await editor.evaluate(() => {
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window.top &&
+        event.data?.type === "copylink-dev:sync-shortcuts" &&
+        event.data.shortcuts?.["copy-title"]?.key === "k"
+      ) {
+        document.body.dataset.shortcutSynced = "true";
+      }
+    });
+  });
+
+  // When: A new title shortcut is saved in the top page's settings.
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#shortcut-copy-title").press("Control+Shift+k");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: The settings close and the iframe receives the updated shortcut.
+  await expect(panel).toBeHidden();
+  await expect(frame.locator("body")).toHaveAttribute(
+    "data-shortcut-synced",
+    "true",
+  );
+
+  const toastCount = await page.locator(".copylink-dev-toast").count();
+
+  // When: The updated shortcut is pressed inside the iframe.
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Then: The top page title is copied and only the top page shows a new toast.
+  await expect(page.locator(".copylink-dev-toast")).toHaveCount(toastCount + 1);
+  await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
+});
+
+test("clipboard fallback copies the link and preserves the page selection", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: The native HTML clipboard write fails and page text is selected.
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "write", {
+      configurable: true,
+      value: () => Promise.reject(new Error("Clipboard unavailable")),
+    });
+    const heading = document.querySelector("h1");
+    if (!heading) {
+      throw new Error("Fixture heading not found");
+    }
+    const range = document.createRange();
+    range.selectNodeContents(heading);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  });
+
+  // When: The copy-link shortcut is pressed.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+l`,
+    fixtureTitle,
+    "リンクをクリップボードにコピーしました",
+  );
+
+  // Then: The fallback copies the HTML link and restores the original selection.
+  const anchor = await page.evaluate((html) => {
+    const link = new DOMParser()
+      .parseFromString(html, "text/html")
+      .querySelector("a");
+    return { href: link?.href, title: link?.textContent };
+  }, payload["text/html"]);
+  expect(anchor).toEqual({ href: page.url(), title: fixtureTitle });
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+    "UserScript E2E fixture",
+  );
+});
+
+test("clipboard failure shows a failure toast with access to settings", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: Both the clipboard API and its fallback fail.
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: () => Promise.reject(new Error("Clipboard unavailable")),
+    });
+    // oxlint-disable-next-line no-deprecated -- Simulate failure of the legacy clipboard fallback.
+    document.execCommand = () => false;
+  });
+
+  // When: The copy-title shortcut is pressed.
+  await page.keyboard.press(`${shortcutModifier}+t`);
+
+  // Then: A failure toast appears and its settings button opens the panel.
+  const toast = page.locator(".copylink-dev-toast").last();
+  await expect(toast).toContainText("タイトルのコピーに失敗しました");
+  await toast.getByRole("button", { name: "設定", exact: true }).click();
+  await expect(page.locator("#copylink-dev-settings")).toBeVisible();
+});
+
 test("Alt-modified shortcuts save base keys and work after reload", async ({
   page,
   gmStorage,

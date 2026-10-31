@@ -1,6 +1,6 @@
 {
   "name": "copylink-dev-user-js",
-  "version": "1.13.0",
+  "version": "1.14.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,10 +16,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/tampermonkey": "^5.5.0",
     "oxfmt": "^0.74.0",
-    "oxlint": "^1.89.0",
+    "oxlint": "^1.90.0",
     "oxlint-tsgolint": "^7.0.2005",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
@@ -31,5 +31,5 @@
       "version": "26.12.1"
     }
   },
-  "packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61"
+  "packageManager": "pnpm@12.16.1"
 }
