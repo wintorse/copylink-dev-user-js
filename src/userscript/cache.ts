@@ -22,7 +22,6 @@ let cachedCustomRegexes: Partial<
 > = {};
 let cachedUserShortcuts: UserShortcuts = {};
 let cachedSheetsRangeFormat: LinkFormat = "htmlWithEmoji";
-let settingsLoaded = false;
 
 /**
  * Reload settings from persistent userscript storage into in-memory cache.
@@ -37,14 +36,12 @@ export const refreshSettingsCache = async () => {
   cachedSheetsRangeFormat = isSheetsRangeFormat(storedFormat)
     ? storedFormat
     : "htmlWithEmoji";
-  settingsLoaded = true;
 };
 
 export const getCachedEmojiNames = () => cachedEmojiNames;
 export const getCachedCustomRegexes = () => cachedCustomRegexes;
 export const getUserShortcuts = () => cachedUserShortcuts;
 export const getCachedSheetsRangeFormat = () => cachedSheetsRangeFormat;
-export const isSettingsLoaded = () => settingsLoaded;
 
 export const getShortcutForCommand = (
   commandKey: string,
@@ -66,6 +63,18 @@ export const updateCustomRegex = async (
 };
 
 /**
+ * Replace custom regexes, including clearing entries omitted by an import.
+ *
+ * @param customRegexes Validated replacement regexes.
+ */
+export const updateCustomRegexes = async (
+  customRegexes: Partial<CustomRegexes>,
+) => {
+  await GM.setValue("customRegexes", customRegexes);
+  cachedCustomRegexes = customRegexes;
+};
+
+/**
  * Replace emoji overrides so omitted PR status values can inherit the common emoji.
  *
  * @param emojiNames Normalized emoji overrides.
@@ -74,8 +83,8 @@ export const updateCustomRegex = async (
 export const updateEmojiNames = async (
   emojiNames: Partial<EmojiNameRecord>,
 ) => {
+  await GM.setValue("emojiNames", emojiNames);
   cachedEmojiNames = emojiNames;
-  await GM.setValue("emojiNames", cachedEmojiNames);
 };
 
 /**

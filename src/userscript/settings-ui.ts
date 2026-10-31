@@ -1,6 +1,10 @@
 import type { SettingsController, Shortcut, ShortcutMap } from "./types";
 import { getUserShortcuts, refreshSettingsCache } from "./cache";
-import { loadSettings, saveSettings } from "./settings-ui-persistence";
+import {
+  importSettings,
+  loadSettings,
+  saveSettings,
+} from "./settings-ui-persistence";
 import { createSettingsPanel } from "./settings-ui-dom";
 
 export type { SettingsController } from "./types";
@@ -93,14 +97,18 @@ export const initSettingsUI = async (
   if (!panelElement || !panelShadowRoot) {
     const created = createSettingsPanel({
       onClose: hidePanel,
-      onSave: () => {
+      onImport: async (text) => {
+        if (panelShadowRoot) {
+          await importSettings(text, panelShadowRoot);
+        }
+      },
+      onSave: () =>
         saveSettings({
           panelShadowRoot,
           defaultsRef,
           hidePanel,
           onSaved: onSavedRef,
-        }).catch(console.error);
-      },
+        }),
       getEffectiveShortcut,
     });
     panelElement = created.panel;

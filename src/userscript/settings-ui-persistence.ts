@@ -20,6 +20,7 @@ import {
   getUserShortcuts,
   refreshSettingsCache,
   updateCustomRegex,
+  updateCustomRegexes,
   updateEmojiNames,
   updateSheetsRangeFormat,
   updateShortcut,
@@ -34,7 +35,51 @@ import {
 import type { EmojiKeys } from "@copylink-dev/types/types";
 import type { ShortcutMap } from "./types";
 import { getMessage } from "./i18n";
+import { parseImportedSettings } from "@copylink-dev/shared/popup/importSettings";
+import { resetSettingsTransferUI } from "./settings-ui-transfer";
 import { showToast } from "./toast";
+
+const loadEmojiSettings = (root: ParentNode) => {
+  const emojiValues = getInitialEmojiValues(getCachedEmojiNames());
+  EMOJI_KEYS.forEach((key) => {
+    const input = root.querySelector<HTMLInputElement>(`#${key}`);
+    if (!input) {
+      return;
+    }
+    input.value = emojiValues[key];
+    input.placeholder = DEFAULT_EMOJI_NAMES[key];
+  });
+  refreshStatusEmojiPlaceholders(root);
+};
+
+const loadCustomRegexSettings = (root: ParentNode) => {
+  const regexes = getCachedCustomRegexes();
+  CUSTOM_REGEX_KEYS.forEach((key) => {
+    const input = root.querySelector<HTMLInputElement>(`#${key}`);
+    if (input) {
+      input.value = regexes[key] ?? "";
+      validateCustomRegexInput(input);
+    }
+  });
+};
+
+/**
+ * Validate all imported data before saving and refreshing the supplied sections.
+ *
+ * @param text Serialized settings from the import field.
+ * @param root Settings root containing the fields to refresh.
+ */
+export const importSettings = async (text: string, root: ParentNode) => {
+  const data = parseImportedSettings(text);
+  if (data.emojiNames !== undefined) {
+    await updateEmojiNames(data.emojiNames);
+    loadEmojiSettings(root);
+  }
+  if (data.customRegexes !== undefined) {
+    await updateCustomRegexes(data.customRegexes);
+    loadCustomRegexSettings(root);
+  }
+};
 
 /**
  * Apply cached settings values to form fields.
@@ -63,27 +108,9 @@ export const loadSettings = (
     }
   });
 
-  const emojiValues = getInitialEmojiValues(getCachedEmojiNames());
-  EMOJI_KEYS.forEach((key) => {
-    const input = root.querySelector<HTMLInputElement>(`#${key}`);
-    if (!input) {
-      return;
-    }
-    input.value = emojiValues[key];
-    input.placeholder = DEFAULT_EMOJI_NAMES[key];
-  });
-  refreshStatusEmojiPlaceholders(root);
-
-  const regexes = getCachedCustomRegexes();
-  CUSTOM_REGEX_KEYS.forEach((key, idx) => {
-    const input = root.querySelector<HTMLInputElement>(
-      `#customRegex${idx + 1}`,
-    );
-    if (input) {
-      input.value = regexes[key] ?? "";
-      validateCustomRegexInput(input);
-    }
-  });
+  loadEmojiSettings(root);
+  loadCustomRegexSettings(root);
+  resetSettingsTransferUI(root);
 
   const formatSelect = root.querySelector<HTMLSelectElement>(
     `#${SheetsRangeFormatSelectId}`,

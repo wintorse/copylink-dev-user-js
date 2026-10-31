@@ -14,6 +14,7 @@ import {
 } from "./settings-ui-config";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
+import { createSettingsTransferSection } from "./settings-ui-transfer";
 import { getMessage } from "./i18n";
 import { getShortcutKey } from "./shortcuts-utils";
 import { isMac } from "./constants";
@@ -418,7 +419,8 @@ const createCustomSitesFields = () => {
 
 type CreateSettingsPanelOptions = {
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
+  onImport: (text: string) => Promise<void>;
   getEffectiveShortcut: (commandKey: string) => Shortcut | undefined;
 };
 
@@ -431,12 +433,14 @@ type CreateSettingsPanelOptions = {
  * @param options Callback and resolver set used while building the panel.
  * @param options.onClose Handler invoked when the close button is pressed.
  * @param options.onSave Handler invoked when the save button is pressed.
+ * @param options.onImport Handler that validates and saves imported settings.
  * @param options.getEffectiveShortcut Resolver for effective shortcut by command key.
  * @returns Constructed panel element and ShadowRoot.
  */
 export const createSettingsPanel = ({
   onClose,
   onSave,
+  onImport,
   getEffectiveShortcut,
 }: CreateSettingsPanelOptions) => {
   const shadow = getShadowRoot();
@@ -505,6 +509,8 @@ export const createSettingsPanel = ({
   appendChildren(settingsContent, customDescription);
 
   appendChildren(settingsContent, createCustomSitesFields());
+  const transfer = createSettingsTransferSection(onImport);
+  appendChildren(settingsContent, transfer.section);
 
   const repoLinkSection = createElement("div", {
     className: "repo-link-section",
@@ -531,7 +537,22 @@ export const createSettingsPanel = ({
     className: "save-btn",
     text: getMessage("saveSettings"),
   });
-  saveBtn.addEventListener("click", onSave);
+  const handleSave = async () => {
+    if (saveBtn.disabled) {
+      return;
+    }
+    saveBtn.disabled = true;
+    try {
+      if (await transfer.importPending()) {
+        await onSave();
+      }
+    } finally {
+      saveBtn.disabled = false;
+    }
+  };
+  saveBtn.addEventListener("click", () => {
+    handleSave().catch(console.error);
+  });
   appendChildren(panel, saveBtn);
 
   shadow.appendChild(panel);
