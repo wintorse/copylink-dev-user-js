@@ -3,6 +3,11 @@ import {
   DEFAULT_EMOJI_NAMES,
   EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
+import type { CustomRegexes, EmojiKeys } from "@copylink-dev/types/types";
+import {
+  type ImportData,
+  parseImportedSettings,
+} from "@copylink-dev/shared/popup/importSettings";
 import {
   SheetsRangeFormatSelectId,
   formatShortcut,
@@ -10,6 +15,7 @@ import {
   validateCustomRegexInput,
 } from "./settings-ui-dom";
 import {
+  buildCustomRegexes,
   buildEmojiNames,
   getInitialEmojiValues,
 } from "@copylink-dev/shared/popup/emojiSettings";
@@ -19,7 +25,6 @@ import {
   getCachedSheetsRangeFormat,
   getUserShortcuts,
   refreshSettingsCache,
-  updateCustomRegex,
   updateCustomRegexes,
   updateEmojiNames,
   updateSheetsRangeFormat,
@@ -32,10 +37,8 @@ import {
   isShortcut,
   shortcutCommands,
 } from "./settings-ui-config";
-import type { EmojiKeys } from "@copylink-dev/types/types";
 import type { ShortcutMap } from "./types";
 import { getMessage } from "./i18n";
-import { parseImportedSettings } from "@copylink-dev/shared/popup/importSettings";
 import { resetSettingsTransferUI } from "./settings-ui-transfer";
 import { showToast } from "./toast";
 
@@ -131,6 +134,7 @@ export const loadSettings = (
 };
 
 type SaveSettingsParams = {
+  importedSettings: ImportData;
   panelShadowRoot: ShadowRoot | null;
   defaultsRef: ShortcutMap | null;
   hidePanel: () => void;
@@ -138,9 +142,10 @@ type SaveSettingsParams = {
 };
 
 /**
- * Persist form inputs, then refresh cache and show completion feedback.
+ * Validate the combined import and form values, then persist the final settings.
  *
  * @param params Dependency object required for saving.
+ * @param params.importedSettings Validated sections that replace matching form values.
  * @param params.panelShadowRoot ShadowRoot of the settings panel.
  * @param params.defaultsRef Default shortcut definitions.
  * @param params.hidePanel Function to close the panel after save.
@@ -148,6 +153,7 @@ type SaveSettingsParams = {
  * @returns Nothing.
  */
 export const saveSettings = async ({
+  importedSettings,
   panelShadowRoot,
   defaultsRef,
   hidePanel,
@@ -169,15 +175,17 @@ export const saveSettings = async ({
     root.querySelectorAll<HTMLInputElement>("[data-command-key]"),
   );
 
-  const invalidRegexInputs = regexInputs.filter(
-    (input) => !validateCustomRegexInput(input),
-  );
+  // A supplied regex section replaces the entire form section, including invalid edits.
+  const invalidRegexInputs =
+    importedSettings.customRegexes === undefined
+      ? regexInputs.filter((input) => !validateCustomRegexInput(input))
+      : [];
   if (invalidRegexInputs.length > 0) {
     invalidRegexInputs[0].focus();
     return;
   }
 
-  // Process emoji name inputs.
+  // Build a snapshot of every final value before performing any storage writes.
   const emojiValues: Partial<Record<EmojiKeys, string>> = {};
   for (const input of emojiInputs) {
     const emojiKey = input.dataset.emojiKey;
@@ -186,18 +194,21 @@ export const saveSettings = async ({
     }
     emojiValues[emojiKey] = input.value;
   }
-  await updateEmojiNames(buildEmojiNames(emojiValues));
+  const emojiNames =
+    importedSettings.emojiNames ?? buildEmojiNames(emojiValues);
 
-  // Process custom regex inputs.
+  const regexValues: Partial<CustomRegexes> = {};
   for (const input of regexInputs) {
     const regexKey = input.dataset.regexKey;
     if (!isCustomRegexKey(regexKey)) {
       continue;
     }
-    await updateCustomRegex(regexKey, input.value || "");
+    regexValues[regexKey] = input.value;
   }
+  const customRegexes =
+    importedSettings.customRegexes ?? buildCustomRegexes(regexValues);
 
-  // Process shortcut inputs.
+  const shortcuts: ShortcutMap = {};
   for (const input of shortcutInputs) {
     const commandKey = input.dataset.commandKey ?? "";
     const parsed =
@@ -208,19 +219,22 @@ export const saveSettings = async ({
           })()
         : defaultsRef[commandKey];
     if (parsed !== null && parsed !== undefined) {
-      await updateShortcut(commandKey, parsed);
+      shortcuts[commandKey] = parsed;
     }
   }
 
-  // Process sheets range format selection.
   const formatSelect = root.querySelector<HTMLSelectElement>(
     `#${SheetsRangeFormatSelectId}`,
   );
-  if (formatSelect) {
-    const value = formatSelect.value;
-    if (isSheetsRangeFormat(value)) {
-      await updateSheetsRangeFormat(value);
-    }
+  const format = formatSelect?.value;
+
+  await updateEmojiNames(emojiNames);
+  await updateCustomRegexes(customRegexes);
+  for (const [commandKey, shortcut] of Object.entries(shortcuts)) {
+    await updateShortcut(commandKey, shortcut);
+  }
+  if (isSheetsRangeFormat(format)) {
+    await updateSheetsRangeFormat(format);
   }
 
   await refreshSettingsCache();

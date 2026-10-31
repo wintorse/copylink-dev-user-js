@@ -12,6 +12,7 @@ import {
   shortcutCommands,
   slackFields,
 } from "./settings-ui-config";
+import type { ImportData } from "@copylink-dev/shared/popup/importSettings";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
 import { createSettingsTransferSection } from "./settings-ui-transfer";
@@ -419,7 +420,7 @@ const createCustomSitesFields = () => {
 
 type CreateSettingsPanelOptions = {
   onClose: () => void;
-  onSave: () => Promise<void>;
+  onSave: (importedSettings: ImportData) => Promise<void>;
   onImport: (text: string) => Promise<void>;
   getEffectiveShortcut: (commandKey: string) => Shortcut | undefined;
 };
@@ -543,8 +544,9 @@ export const createSettingsPanel = ({
     }
     saveBtn.disabled = true;
     try {
-      if (await transfer.importPending()) {
-        await onSave();
+      const importedSettings = transfer.readPending();
+      if (importedSettings !== null) {
+        await onSave(importedSettings);
       }
     } finally {
       saveBtn.disabled = false;

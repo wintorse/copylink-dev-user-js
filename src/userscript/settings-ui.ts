@@ -102,8 +102,9 @@ export const initSettingsUI = async (
           await importSettings(text, panelShadowRoot);
         }
       },
-      onSave: () =>
+      onSave: (importedSettings) =>
         saveSettings({
+          importedSettings,
           panelShadowRoot,
           defaultsRef,
           hidePanel,

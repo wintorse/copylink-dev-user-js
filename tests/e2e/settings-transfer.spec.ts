@@ -335,6 +335,79 @@ test("the main Save button imports pasted JSON and saves other form edits", asyn
   expect(payload["text/html"]).toContain(":imported:");
 });
 
+test("the main Save button validates form edits before saving an emoji-only import", async ({
+  page,
+  gmStorage,
+  shortcutModifier,
+}) => {
+  // Given: An emoji-only import is pending alongside an invalid regex edit.
+  gmStorage.set("emojiNames", { github: ":saved:" });
+  gmStorage.set("customRegexes", { customRegex1: "old" });
+  const savedSettings = structuredClone([...gmStorage]);
+  await gotoFixture(page);
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  const regex = panel.locator("#customRegex1");
+  const json = JSON.stringify({ emojiNames: { github: ":imported:" } });
+  await regex.fill("[");
+  await panel.locator("#sheets-range-format").selectOption("markdown");
+  await panel.locator("#importButton").click();
+  await panel.locator("#importTextarea").fill(json);
+
+  // When: The main Save button is clicked.
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: Validation blocks all writes and preserves the pending JSON and edits.
+  await expect(regex).toBeFocused();
+  await expect(regex).toHaveAttribute("aria-invalid", "true");
+  await expect(panel).toBeVisible();
+  expect([...gmStorage]).toEqual(savedSettings);
+  await expect(panel.locator("#importTextarea")).toHaveValue(json);
+  await expect(panel.locator("#github")).toHaveValue(":saved:");
+  await expect(panel.locator("#importMessage")).toBeEmpty();
+
+  // When: The regex is corrected and Save is pressed again.
+  await regex.fill("example\\.com");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: The import and the corrected form edits are saved together.
+  await expect(panel).toBeHidden();
+  expect(gmStorage.get("emojiNames")).toMatchObject({ github: ":imported:" });
+  expect(gmStorage.get("customRegexes")).toMatchObject({
+    customRegex1: "example\\.com",
+  });
+  expect(gmStorage.get("sheetsRangeFormat")).toBe("markdown");
+});
+
+test("the main Save button validates the imported replacement for a regex section", async ({
+  page,
+  gmStorage,
+  shortcutModifier,
+}) => {
+  // Given: A valid imported regex section replaces an invalid regex form edit.
+  await gotoFixture(page);
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#customRegex1").fill("[");
+  await panel.locator("#github").fill(":edited:");
+  await panel.locator("#importButton").click();
+  await panel.locator("#importTextarea").fill(
+    JSON.stringify({
+      customRegexes: { customRegex1: "example\\.com" },
+    }),
+  );
+
+  // When: The main Save button is clicked.
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: The valid replacement is saved along with the edited emoji section.
+  await expect(panel).toBeHidden();
+  expect(gmStorage.get("customRegexes")).toEqual({
+    customRegex1: "example\\.com",
+  });
+  expect(gmStorage.get("emojiNames")).toMatchObject({ github: ":edited:" });
+});
+
 test("the main Save button rejects invalid import JSON before saving any edits", async ({
   page,
   gmStorage,

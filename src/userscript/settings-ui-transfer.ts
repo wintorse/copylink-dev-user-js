@@ -1,4 +1,8 @@
 import type { CustomRegexes, EmojiNameRecord } from "@copylink-dev/types/types";
+import {
+  type ImportData,
+  parseImportedSettings,
+} from "@copylink-dev/shared/popup/importSettings";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 import { getMessage } from "./i18n";
 
@@ -38,7 +42,7 @@ const exportSettings = async () => {
  * Build clipboard export and JSON import controls inside the settings panel.
  *
  * @param onImport Callback to validate, save, and apply imported settings.
- * @returns Transfer section and a method to import pending JSON before saving.
+ * @returns Transfer section and a method to read validated pending settings.
  */
 export const createSettingsTransferSection = (
   onImport: (text: string) => Promise<void>,
@@ -104,9 +108,29 @@ export const createSettingsTransferSection = (
     errorMessage.textContent = "";
     importMessage.textContent = "";
   });
+  const showImportError = () => {
+    textarea.setAttribute("aria-invalid", "true");
+    errorMessage.textContent = getMessage("importFailure");
+    textarea.focus();
+  };
+  const readPending = (): ImportData | null => {
+    if (confirmButton.disabled) {
+      return null;
+    }
+    const text = textarea.value.trim();
+    if (!text) {
+      return {};
+    }
+    try {
+      return parseImportedSettings(text);
+    } catch {
+      showImportError();
+      return null;
+    }
+  };
   const submitImport = async () => {
     if (confirmButton.disabled) {
-      return false;
+      return;
     }
     confirmButton.disabled = true;
     errorMessage.textContent = "";
@@ -116,12 +140,8 @@ export const createSettingsTransferSection = (
       textarea.value = "";
       textarea.removeAttribute("aria-invalid");
       importMessage.textContent = getMessage("importSuccess");
-      return true;
     } catch {
-      textarea.setAttribute("aria-invalid", "true");
-      errorMessage.textContent = getMessage("importFailure");
-      textarea.focus();
-      return false;
+      showImportError();
     } finally {
       confirmButton.disabled = false;
     }
@@ -151,7 +171,6 @@ export const createSettingsTransferSection = (
   section.append(heading, description, actions, exportMessage, form);
   return {
     section,
-    importPending: () =>
-      textarea.value.trim() ? submitImport() : Promise.resolve(true),
+    readPending,
   };
 };

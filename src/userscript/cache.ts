@@ -48,21 +48,6 @@ export const getShortcutForCommand = (
 ): ShortcutDefinition | undefined => cachedUserShortcuts[commandKey];
 
 /**
- * Update one custom regex and persist it to storage.
- *
- * @param key Custom regex key.
- * @param value Regex string.
- * @returns Nothing.
- */
-export const updateCustomRegex = async (
-  key: keyof CustomRegexes,
-  value: string,
-) => {
-  cachedCustomRegexes[key] = value;
-  await GM.setValue("customRegexes", cachedCustomRegexes);
-};
-
-/**
  * Replace custom regexes, including clearing entries omitted by an import.
  *
  * @param customRegexes Validated replacement regexes.
