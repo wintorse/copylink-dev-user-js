@@ -262,6 +262,77 @@ test("a dynamically added cross-origin iframe receives updated shortcuts", async
   await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
 });
 
+test("an open tab refreshes shortcuts changed in another tab", async ({
+  page,
+  context,
+  shortcutModifier,
+}) => {
+  // Given: A page and its iframe are open before another tab changes settings.
+  await gotoFixture(page);
+  const frame = page.frameLocator("iframe[title='Fixture frame']");
+  await frame.locator("#editor").evaluate(() => {
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window.top &&
+        event.data?.type === "copylink-dev:sync-shortcuts" &&
+        event.data.shortcuts?.["copy-title"]?.key === "k"
+      ) {
+        document.body.dataset.shortcutSynced = "true";
+      }
+    });
+  });
+  const other = await context.newPage();
+  await gotoFixture(other);
+  await openSettings(other, `${shortcutModifier}+t`);
+  const panel = other.locator("#copylink-dev-settings");
+
+  // When: The title shortcut is changed and the original tab is focused again.
+  await panel.locator("#shortcut-copy-title").press("Control+Shift+k");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(panel).toBeHidden();
+  await page.bringToFront();
+  // Headless Chromium keeps each tab focused, so simulate the focus event.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+
+  // Then: The frame receives the new shortcut without reloading the page.
+  await expect(frame.locator("body")).toHaveAttribute(
+    "data-shortcut-synced",
+    "true",
+  );
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    page.locator("#editor"),
+  );
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    frame.locator("#editor"),
+  );
+
+  // When: The former title shortcut is pressed on the original page.
+  await page.evaluate(() => {
+    document.addEventListener("keydown", (event) => {
+      if (event.key.toLowerCase() === "t") {
+        document.body.dataset.oldShortcutPrevented = String(
+          event.defaultPrevented,
+        );
+      }
+    });
+  });
+  await page.locator("#editor").press(`${shortcutModifier}+t`);
+
+  // Then: The old shortcut no longer executes the copylink command.
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-old-shortcut-prevented",
+    "false",
+  );
+});
+
 test("a cross-origin iframe inside nested shadow roots uses top-page shortcuts", async ({
   page,
   shortcutModifier,

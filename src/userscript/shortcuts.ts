@@ -105,13 +105,24 @@ export const registerShortcuts = async (
   observeIframeAdditions(handler);
 
   const refresh = async () => {
-    await refreshSettingsCache();
-    effective = buildEffectiveShortcuts(defaults);
-    // After refreshing the settings cache, rebuild the effective shortcuts.
+    const shortcuts = await GM.getValue<ShortcutMap>("userShortcuts", {});
+    effective = buildEffectiveShortcuts(defaults, shortcuts);
     if (window === window.top) {
       syncFrameShortcuts(window, effective, shortcutsMessageType);
     }
   };
+
+  // Managers without value-change listeners still pick up edits from other tabs.
+  if (window === window.top) {
+    window.addEventListener("focus", () => {
+      refresh().catch(console.error);
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        refresh().catch(console.error);
+      }
+    });
+  }
 
   // Initially sync the effective shortcuts with all frames if this is the top-level window.
   if (window === window.top) {

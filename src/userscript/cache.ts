@@ -57,6 +57,19 @@ export const getCachedCustomRegexes = () => cachedCustomRegexes;
 export const getUserShortcuts = () => cachedUserShortcuts;
 export const getCachedSheetsRangeFormat = () => cachedSheetsRangeFormat;
 
+/**
+ * Read the current Sheets range format, including changes made in other tabs.
+ *
+ * @returns The saved format or the default when no valid value is stored.
+ */
+export const getSheetsRangeFormat = async (): Promise<LinkFormat> => {
+  const storedFormat: unknown = await GM.getValue(
+    "sheetsRangeFormat",
+    "htmlWithEmoji",
+  );
+  return isSheetsRangeFormat(storedFormat) ? storedFormat : "htmlWithEmoji";
+};
+
 export const getShortcutForCommand = (
   commandKey: string,
 ): ShortcutDefinition | undefined => cachedUserShortcuts[commandKey];
