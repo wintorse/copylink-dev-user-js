@@ -11,8 +11,8 @@ import {
 import type { Command } from "@copylink-dev/types/types";
 import { SettingsHostId } from "./constants";
 import type { ShortcutMap } from "./types";
+import { getUserShortcuts } from "./settings-storage";
 import { isDescendantFrame } from "./frame-utils";
-import { refreshSettingsCache } from "./cache";
 
 const commandMessageType = "copylink-dev:run-command";
 const shortcutsMessageType = "copylink-dev:sync-shortcuts";
@@ -30,8 +30,7 @@ export const registerShortcuts = async (
   defaults: ShortcutMap,
   commandHandlers: Record<Command, () => Promise<void>>,
 ) => {
-  await refreshSettingsCache();
-  let effective = buildEffectiveShortcuts(defaults);
+  let effective = buildEffectiveShortcuts(defaults, await getUserShortcuts());
   if (window === window.top) {
     window.addEventListener("message", (event: MessageEvent<unknown>) => {
       const data = event.data;
@@ -105,13 +104,24 @@ export const registerShortcuts = async (
   observeIframeAdditions(handler);
 
   const refresh = async () => {
-    await refreshSettingsCache();
-    effective = buildEffectiveShortcuts(defaults);
-    // After refreshing the settings cache, rebuild the effective shortcuts.
+    const shortcuts = await getUserShortcuts();
+    effective = buildEffectiveShortcuts(defaults, shortcuts);
     if (window === window.top) {
       syncFrameShortcuts(window, effective, shortcutsMessageType);
     }
   };
+
+  // Managers without value-change listeners still pick up edits from other tabs.
+  if (window === window.top) {
+    window.addEventListener("focus", () => {
+      refresh().catch(console.error);
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        refresh().catch(console.error);
+      }
+    });
+  }
 
   // Initially sync the effective shortcuts with all frames if this is the top-level window.
   if (window === window.top) {

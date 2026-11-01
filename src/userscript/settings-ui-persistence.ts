@@ -9,6 +9,11 @@ import {
   parseImportedSettings,
 } from "@copylink-dev/shared/popup/importSettings";
 import {
+  SettingsStorageError,
+  type SettingsValues,
+  saveStoredSettings,
+} from "./settings-storage";
+import {
   SheetsRangeFormatSelectId,
   formatShortcut,
   refreshStatusEmojiPlaceholders,
@@ -19,13 +24,6 @@ import {
   buildEmojiNames,
   getInitialEmojiValues,
 } from "@copylink-dev/shared/popup/emojiSettings";
-import {
-  getCachedCustomRegexes,
-  getCachedEmojiNames,
-  getCachedSheetsRangeFormat,
-  getUserShortcuts,
-  updateSettings,
-} from "./cache";
 import { getMessage, getSettingsSaveFailureMessage } from "./i18n";
 import {
   isCustomRegexKey,
@@ -34,13 +32,15 @@ import {
   isShortcut,
   shortcutCommands,
 } from "./settings-ui-config";
-import { SettingsStorageError } from "./settings-storage";
 import type { ShortcutMap } from "./types";
 import { resetSettingsTransferUI } from "./settings-ui-transfer";
 import { showToast } from "./toast";
 
-const loadEmojiSettings = (root: ParentNode) => {
-  const emojiValues = getInitialEmojiValues(getCachedEmojiNames());
+const loadEmojiSettings = (
+  root: ParentNode,
+  emojiNames: SettingsValues["emojiNames"],
+) => {
+  const emojiValues = getInitialEmojiValues(emojiNames);
   EMOJI_KEYS.forEach((key) => {
     const input = root.querySelector<HTMLInputElement>(`#${key}`);
     if (!input) {
@@ -52,8 +52,10 @@ const loadEmojiSettings = (root: ParentNode) => {
   refreshStatusEmojiPlaceholders(root);
 };
 
-const loadCustomRegexSettings = (root: ParentNode) => {
-  const regexes = getCachedCustomRegexes();
+const loadCustomRegexSettings = (
+  root: ParentNode,
+  regexes: SettingsValues["customRegexes"],
+) => {
   CUSTOM_REGEX_KEYS.forEach((key) => {
     const input = root.querySelector<HTMLInputElement>(`#${key}`);
     if (input) {
@@ -71,32 +73,34 @@ const loadCustomRegexSettings = (root: ParentNode) => {
  */
 export const importSettings = async (text: string, root: ParentNode) => {
   const data = parseImportedSettings(text);
-  await updateSettings(data);
+  await saveStoredSettings(data);
   if (data.emojiNames !== undefined) {
-    loadEmojiSettings(root);
+    loadEmojiSettings(root, data.emojiNames);
   }
   if (data.customRegexes !== undefined) {
-    loadCustomRegexSettings(root);
+    loadCustomRegexSettings(root, data.customRegexes);
   }
 };
 
 /**
- * Apply cached settings values to form fields.
+ * Apply settings values to form fields.
  *
  * @param panelShadowRoot ShadowRoot of the settings panel.
  * @param defaultsRef Default shortcut definitions.
+ * @param settings Settings loaded for the panel.
  * @returns Nothing.
  */
 export const loadSettings = (
   panelShadowRoot: ShadowRoot | null,
   defaultsRef: ShortcutMap | null,
+  settings: SettingsValues,
 ) => {
   if (!panelShadowRoot || !defaultsRef) {
     return;
   }
 
   const root = panelShadowRoot;
-  const userShortcuts = getUserShortcuts();
+  const { userShortcuts } = settings;
 
   shortcutCommands.forEach(({ key }) => {
     const input = root.querySelector<HTMLInputElement>(`#shortcut-${key}`);
@@ -107,21 +111,21 @@ export const loadSettings = (
     }
   });
 
-  loadEmojiSettings(root);
-  loadCustomRegexSettings(root);
+  loadEmojiSettings(root, settings.emojiNames);
+  loadCustomRegexSettings(root, settings.customRegexes);
   resetSettingsTransferUI(root);
 
   const formatSelect = root.querySelector<HTMLSelectElement>(
     `#${SheetsRangeFormatSelectId}`,
   );
   if (formatSelect) {
-    const cachedFormat = getCachedSheetsRangeFormat();
+    const { sheetsRangeFormat } = settings;
     const options = Array.from(formatSelect.options);
     const hasCachedOption = options.some(
-      (option) => option.value === cachedFormat,
+      (option) => option.value === sheetsRangeFormat,
     );
     if (hasCachedOption) {
-      formatSelect.value = cachedFormat;
+      formatSelect.value = sheetsRangeFormat;
     } else if (options.length > 0) {
       // Fallback to the first available option to avoid a blank selection.
       formatSelect.value = options[0].value;
@@ -225,7 +229,7 @@ export const saveSettings = async ({
   const format = formatSelect?.value;
 
   try {
-    await updateSettings({
+    await saveStoredSettings({
       emojiNames,
       customRegexes,
       userShortcuts: shortcuts,

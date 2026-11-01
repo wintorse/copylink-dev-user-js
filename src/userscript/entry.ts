@@ -8,10 +8,10 @@ import type { Command } from "@copylink-dev/types/types";
 import type { SettingsController } from "./types";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 import { defaultShortcuts } from "./constants";
-import { getCachedSheetsRangeFormat } from "./cache";
 import { getEmojiName } from "./emoji";
 import { getFormattedTitle } from "@copylink-dev/shared/getFormattedTitle";
 import { getGoogleSheetsRangeInfo } from "@copylink-dev/shared/getGoogleSheetsRangeLink";
+import { getSheetsRangeFormat } from "./settings-storage";
 import { initSettingsUI } from "./settings-ui";
 import { registerShortcuts } from "./shortcuts";
 
@@ -23,11 +23,11 @@ let shortcutControllerRef: { refresh: () => Promise<void> } | null = null;
  *
  * @returns Settings controller instance.
  */
-const ensureSettingsController = async () => {
+const ensureSettingsController = () => {
   if (settingsController) {
     return settingsController;
   }
-  settingsController = await initSettingsUI(defaultShortcuts, () => {
+  settingsController = initSettingsUI(defaultShortcuts, () => {
     if (shortcutControllerRef) {
       shortcutControllerRef.refresh().catch(console.error);
     }
@@ -55,7 +55,7 @@ const isMessageId = (key: string): key is MessageId => key in i18nMessages.en;
 const buildDeps = (): CopyTextLinkDeps => ({
   t: (key: string) => (isMessageId(key) ? getMessage(key) : key),
   getEmojiName,
-  getLinkFormat: () => Promise.resolve(getCachedSheetsRangeFormat()),
+  getLinkFormat: getSheetsRangeFormat,
   getFormattedTitle,
   getGoogleSheetsRangeInfo,
   getUrl: () => document.location.href,
@@ -80,9 +80,7 @@ const init = async () => {
     return;
   }
   initToastUI(() => {
-    ensureSettingsController()
-      .then((controller) => controller.show())
-      .catch(console.error);
+    ensureSettingsController().show().catch(console.error);
   });
   const shortcutController = await registerShortcuts(
     defaultShortcuts,
@@ -90,7 +88,7 @@ const init = async () => {
   );
   shortcutControllerRef = shortcutController;
   if (window === window.top) {
-    await ensureSettingsController();
+    ensureSettingsController();
   }
 };
 

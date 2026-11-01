@@ -2,7 +2,6 @@ import type { Shortcut, ShortcutMap } from "./types";
 import type { Command } from "@copylink-dev/types/types";
 import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
 import { getChildFrames } from "./frame-utils";
-import { getUserShortcuts } from "./cache";
 
 /**
  * Check if a value is a valid shortcut map.
@@ -103,10 +102,13 @@ const normalizeShortcut = (shortcut: Partial<Shortcut>): Shortcut => ({
  * Merge default shortcuts with user-defined overrides.
  *
  * @param defaults Default shortcut map.
+ * @param overrides User shortcut overrides.
  * @returns Effective normalized shortcut map.
  */
-export const buildEffectiveShortcuts = (defaults: ShortcutMap): ShortcutMap => {
-  const overrides = getUserShortcuts();
+export const buildEffectiveShortcuts = (
+  defaults: ShortcutMap,
+  overrides: ShortcutMap,
+): ShortcutMap => {
   const combined: ShortcutMap = { ...defaults };
   Object.entries(overrides).forEach(([key, value]) => {
     combined[key] = normalizeShortcut(value);

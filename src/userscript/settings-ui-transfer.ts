@@ -1,10 +1,9 @@
-import type { CustomRegexes, EmojiNameRecord } from "@copylink-dev/types/types";
 import {
   type ImportData,
   parseImportedSettings,
 } from "@copylink-dev/shared/popup/importSettings";
+import { SettingsStorageError, getEmojiSettings } from "./settings-storage";
 import { getMessage, getSettingsSaveFailureMessage } from "./i18n";
-import { SettingsStorageError } from "./settings-storage";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
 
 /**
@@ -29,10 +28,7 @@ export const resetSettingsTransferUI = (root: ParentNode) => {
 };
 
 const exportSettings = async () => {
-  const [emojiNames, customRegexes] = await Promise.all([
-    GM.getValue<Partial<EmojiNameRecord>>("emojiNames", {}),
-    GM.getValue<Partial<CustomRegexes>>("customRegexes", {}),
-  ]);
+  const { emojiNames, customRegexes } = await getEmojiSettings();
   const json = JSON.stringify({ emojiNames, customRegexes }, null, 2);
   const fallback = document.createElement("p");
   fallback.textContent = json;

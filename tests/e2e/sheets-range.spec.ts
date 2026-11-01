@@ -1,4 +1,10 @@
-import { copyWithShortcut, expect, test } from "./fixtures";
+import {
+  copyWithShortcut,
+  expect,
+  gotoFixture,
+  openSettings,
+  test,
+} from "./fixtures";
 
 const sheetsUrl = "https://docs.google.com/spreadsheets/d/example/edit#gid=42";
 const rangeUrl = `${sheetsUrl}&range=B2:C4`;
@@ -100,4 +106,56 @@ test("Sheets range shortcut reports a missing selection without copying", async 
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     "unchanged",
   );
+});
+
+test("an open Sheets tab uses a format saved in another tab", async ({
+  page,
+  context,
+  shortcutModifier,
+}) => {
+  // Given: The open Sheets tab has cached the URL-only format.
+  await copyWithShortcut(
+    page,
+    `${shortcutModifier}+t`,
+    title,
+    "タイトルをクリップボードにコピーしました",
+  );
+  await page.getByRole("button", { name: "設定", exact: true }).last().click();
+  const sheetsPanel = page.locator("#copylink-dev-settings");
+  await sheetsPanel.locator("#sheets-range-format").selectOption("plainUrl");
+  await sheetsPanel.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(sheetsPanel).toBeHidden();
+
+  // Given: Settings are open in another tab, while the Sheets tab is active.
+  const other = await context.newPage();
+  await gotoFixture(other);
+  await openSettings(other, `${shortcutModifier}+t`);
+  await page.bringToFront();
+
+  // When: Another tab saves Markdown without refocusing the Sheets tab.
+  await other.evaluate(() => {
+    const root = document.getElementById(
+      "copylink-dev-settings-host",
+    )?.shadowRoot;
+    const select = root?.querySelector<HTMLSelectElement>(
+      "#sheets-range-format",
+    );
+    const button = root?.querySelector<HTMLButtonElement>(".save-btn");
+    if (!select || !button) {
+      throw new Error("Settings controls are missing");
+    }
+    select.value = "markdown";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    button.click();
+  });
+  await expect(other.locator("#copylink-dev-settings")).toBeHidden();
+
+  // Then: The first range copy uses the newly saved format.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+r`,
+    `[${title}](${rangeUrl})`,
+    "この範囲のリンクをクリップボードにコピーしました",
+  );
+  expect(payload["text/html"]).toBeUndefined();
 });
