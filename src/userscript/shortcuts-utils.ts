@@ -1,6 +1,7 @@
 import type { Shortcut, ShortcutMap } from "./types";
 import type { Command } from "@copylink-dev/types/types";
 import { VALID_COMMANDS } from "@copylink-dev/shared/constants";
+import { getChildFrames } from "./frame-utils";
 import { getUserShortcuts } from "./cache";
 
 /**
@@ -40,8 +41,7 @@ export const syncFrameShortcuts = (
   shortcuts: ShortcutMap,
   messageType: string,
 ) => {
-  for (let index = 0; index < target.length; index += 1) {
-    const frame = target.frames[index];
+  for (const frame of getChildFrames(target)) {
     frame.postMessage({ type: messageType, shortcuts }, "*");
     syncFrameShortcuts(frame, shortcuts, messageType);
   }
