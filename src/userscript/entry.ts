@@ -11,7 +11,7 @@ import { defaultShortcuts } from "./constants";
 import { getEmojiName } from "./emoji";
 import { getFormattedTitle } from "@copylink-dev/shared/getFormattedTitle";
 import { getGoogleSheetsRangeInfo } from "@copylink-dev/shared/getGoogleSheetsRangeLink";
-import { getSheetsRangeFormat } from "./cache";
+import { getSheetsRangeFormat } from "./settings-storage";
 import { initSettingsUI } from "./settings-ui";
 import { registerShortcuts } from "./shortcuts";
 
@@ -23,11 +23,11 @@ let shortcutControllerRef: { refresh: () => Promise<void> } | null = null;
  *
  * @returns Settings controller instance.
  */
-const ensureSettingsController = async () => {
+const ensureSettingsController = () => {
   if (settingsController) {
     return settingsController;
   }
-  settingsController = await initSettingsUI(defaultShortcuts, () => {
+  settingsController = initSettingsUI(defaultShortcuts, () => {
     if (shortcutControllerRef) {
       shortcutControllerRef.refresh().catch(console.error);
     }
@@ -80,9 +80,7 @@ const init = async () => {
     return;
   }
   initToastUI(() => {
-    ensureSettingsController()
-      .then((controller) => controller.show())
-      .catch(console.error);
+    ensureSettingsController().show().catch(console.error);
   });
   const shortcutController = await registerShortcuts(
     defaultShortcuts,
@@ -90,7 +88,7 @@ const init = async () => {
   );
   shortcutControllerRef = shortcutController;
   if (window === window.top) {
-    await ensureSettingsController();
+    ensureSettingsController();
   }
 };
 

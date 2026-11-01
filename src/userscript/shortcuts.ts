@@ -11,8 +11,8 @@ import {
 import type { Command } from "@copylink-dev/types/types";
 import { SettingsHostId } from "./constants";
 import type { ShortcutMap } from "./types";
+import { getUserShortcuts } from "./settings-storage";
 import { isDescendantFrame } from "./frame-utils";
-import { refreshSettingsCache } from "./cache";
 
 const commandMessageType = "copylink-dev:run-command";
 const shortcutsMessageType = "copylink-dev:sync-shortcuts";
@@ -30,8 +30,7 @@ export const registerShortcuts = async (
   defaults: ShortcutMap,
   commandHandlers: Record<Command, () => Promise<void>>,
 ) => {
-  await refreshSettingsCache();
-  let effective = buildEffectiveShortcuts(defaults);
+  let effective = buildEffectiveShortcuts(defaults, await getUserShortcuts());
   if (window === window.top) {
     window.addEventListener("message", (event: MessageEvent<unknown>) => {
       const data = event.data;
@@ -105,7 +104,7 @@ export const registerShortcuts = async (
   observeIframeAdditions(handler);
 
   const refresh = async () => {
-    const shortcuts = await GM.getValue<ShortcutMap>("userShortcuts", {});
+    const shortcuts = await getUserShortcuts();
     effective = buildEffectiveShortcuts(defaults, shortcuts);
     if (window === window.top) {
       syncFrameShortcuts(window, effective, shortcutsMessageType);

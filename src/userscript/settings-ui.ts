@@ -1,11 +1,11 @@
 import type { SettingsController, Shortcut, ShortcutMap } from "./types";
-import { getUserShortcuts, refreshSettingsCache } from "./cache";
 import {
   importSettings,
   loadSettings,
   saveSettings,
 } from "./settings-ui-persistence";
 import { createSettingsPanel } from "./settings-ui-dom";
+import { getSettings } from "./settings-storage";
 
 export type { SettingsController } from "./types";
 
@@ -16,6 +16,7 @@ let panelShadowRoot: ShadowRoot | null = null;
 let isPanelVisible = false;
 let defaultsRef: DefaultsMap | null = null;
 let onSavedRef: (() => void) | undefined;
+let panelShortcuts: ShortcutMap = {};
 
 /**
  * Synchronize the public visibility flag from the panel element's display state.
@@ -35,19 +36,19 @@ const updateVisibilityState = () => {
  * @returns Effective shortcut, or `undefined` if not available.
  */
 const getEffectiveShortcut = (commandKey: string): Shortcut | undefined => {
-  const userShortcuts = getUserShortcuts();
-  return userShortcuts[commandKey] ?? defaultsRef?.[commandKey];
+  return panelShortcuts[commandKey] ?? defaultsRef?.[commandKey];
 };
 
 /**
- * Refresh settings cache, then show the settings panel.
+ * Read current settings, then show the settings panel.
  */
 const showPanel = async () => {
   if (!panelElement) {
     return;
   }
-  await refreshSettingsCache();
-  loadSettings(panelShadowRoot, defaultsRef);
+  const settings = await getSettings();
+  panelShortcuts = settings.userShortcuts;
+  loadSettings(panelShadowRoot, defaultsRef, settings);
   panelElement.style.display = "block";
   updateVisibilityState();
 };
@@ -78,21 +79,19 @@ const togglePanel = async () => {
  * Initialize the settings UI and return a controller for external operations.
  *
  * - Builds the settings panel in Shadow DOM on first call only.
- * - Applies cached settings to the form.
+ * - Loads current settings when the panel is shown.
  * - Calls the optional callback after save.
  *
  * @param defaults Default shortcut definitions by command.
  * @param onSaved Optional callback invoked after save completes.
  * @returns Controller for settings panel operations.
  */
-export const initSettingsUI = async (
+export const initSettingsUI = (
   defaults: DefaultsMap,
   onSaved?: () => void,
-): Promise<SettingsController> => {
+): SettingsController => {
   defaultsRef = defaults;
   onSavedRef = onSaved;
-
-  await refreshSettingsCache();
 
   if (!panelElement || !panelShadowRoot) {
     const created = createSettingsPanel({
@@ -117,8 +116,6 @@ export const initSettingsUI = async (
     panelElement.style.display = "none";
     isPanelVisible = false;
   }
-
-  loadSettings(panelShadowRoot, defaultsRef);
 
   return {
     show: showPanel,

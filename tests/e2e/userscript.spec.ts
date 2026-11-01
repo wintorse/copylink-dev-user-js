@@ -72,6 +72,36 @@ test("copy-link-for-slack copies Markdown text and HTML", async ({
   expect(payload["text/html"]).toContain("<a href=");
 });
 
+test("copying with an emoji does not depend on the Sheets format", async ({
+  page,
+  gmStorage,
+  shortcutModifier,
+}) => {
+  // Given: Emoji settings are available, but reading the Sheets format fails.
+  gmStorage.set("emojiNames", { customWebsite1: ":test_link:" });
+  gmStorage.set("customRegexes", { customRegex1: "copylink-e2e\\.test" });
+  gmStorage.set("sheetsRangeFormat", "markdown");
+  const getValue = gmStorage.get.bind(gmStorage);
+  gmStorage.get = (key) => {
+    if (key === "sheetsRangeFormat") {
+      throw new Error("Format unavailable");
+    }
+    return getValue(key);
+  };
+  await gotoFixture(page);
+
+  // When: The Slack link shortcut is pressed.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+Shift+l`,
+    `[${fixtureMarkdownTitle}](${page.url()})`,
+    "リンクをクリップボードにコピーしました",
+  );
+
+  // Then: The stored custom emoji is included in the copied link.
+  expect(payload["text/html"]).toContain(":test_link:");
+});
+
 test("the toast opens settings and the close button hides them", async ({
   page,
   shortcutModifier,

@@ -1,3 +1,62 @@
+import type {
+  CustomRegexes,
+  EmojiNameRecord,
+  LinkFormat,
+} from "@copylink-dev/types/types";
+import type { ShortcutMap } from "./types";
+import { isSheetsRangeFormat } from "./settings-ui-config";
+
+export type SettingsValues = {
+  emojiNames: Partial<EmojiNameRecord>;
+  customRegexes: Partial<CustomRegexes>;
+  userShortcuts: ShortcutMap;
+  sheetsRangeFormat: LinkFormat;
+};
+
+/**
+ * Read the emoji settings used for copying and exporting.
+ * @returns The stored emoji names and custom regexes.
+ */
+export const getEmojiSettings = async () => {
+  const [emojiNames, customRegexes] = await Promise.all([
+    GM.getValue<SettingsValues["emojiNames"]>("emojiNames", {}),
+    GM.getValue<SettingsValues["customRegexes"]>("customRegexes", {}),
+  ]);
+  return { emojiNames, customRegexes };
+};
+
+/**
+ * Read the shortcut overrides for keyboard event handling.
+ * @returns The stored shortcut overrides.
+ */
+export const getUserShortcuts = () =>
+  GM.getValue<ShortcutMap>("userShortcuts", {});
+
+/**
+ * Read the current Sheets range format, falling back to the default.
+ * @returns The effective Sheets range format.
+ */
+export const getSheetsRangeFormat = async (): Promise<LinkFormat> => {
+  const stored: unknown = await GM.getValue(
+    "sheetsRangeFormat",
+    "htmlWithEmoji",
+  );
+  return isSheetsRangeFormat(stored) ? stored : "htmlWithEmoji";
+};
+
+/**
+ * Read all settings for the settings panel.
+ * @returns The current settings.
+ */
+export const getSettings = async (): Promise<SettingsValues> => {
+  const [emoji, userShortcuts, sheetsRangeFormat] = await Promise.all([
+    getEmojiSettings(),
+    getUserShortcuts(),
+    getSheetsRangeFormat(),
+  ]);
+  return { ...emoji, userShortcuts, sheetsRangeFormat };
+};
+
 export class SettingsStorageError extends Error {
   readonly cause: unknown;
   readonly rollbackFailed: boolean;
