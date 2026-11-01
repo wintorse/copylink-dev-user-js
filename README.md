@@ -100,3 +100,10 @@ Tests cover copying, settings, persistence, iframe shortcuts, and XML exclusion.
 They do not cover installation or execution through Tampermonkey or Safari Userscripts.
 Results are written to `test-results/results.json`, with screenshots and traces on failure.
 Use `pnpm test --headed` to watch the browser or `pnpm test --grep "shortcut"` to filter tests.
+
+### Releases
+
+When changes are pushed to `main`, a workflow builds the userscript and creates a
+GitHub Release with a `v` tag based on the version in `package.json`. Update the
+version before each release; an existing tag pointing to a different commit will
+cause the workflow to fail. Pushing a `v*` tag also creates a release.
