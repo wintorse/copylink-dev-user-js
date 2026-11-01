@@ -2,7 +2,7 @@
 
 # copylink-dev.user.js (UserScript)
 
-このリポジトリは、[copylink-dev](https://github.com/wintorse/copylink-dev) を UserScript として利用できるようにしたものです。Chrome 拡張機能が使えないブラウザ（例: Safari）でも使用できます。ブラウザ拡張版のソースは git submodule として含まれています。
+このリポジトリは、[copylink-dev](https://github.com/wintorse/copylink-dev) を UserScript として利用できるようにしたものです。Chrome 拡張機能が使えないブラウザ（例: Safari）でも使用できます。ブラウザ拡張機能版のソースは git submodule として含まれています。
 
 ## copylink-dev との違い
 
@@ -12,7 +12,7 @@
 
 ## 設定のインポート・エクスポート
 
-絵文字名とカスタム正規表現は、拡張版と同じ JSON 形式で共有できます。
+絵文字名とカスタム正規表現は、ブラウザ拡張機能版と同じ JSON 形式で共有できます。
 
 1. コピー後の通知にある「設定」を押し、「設定のインポート・エクスポート」までスクロールします。
 2. エクスポートするときは「エクスポート」を押します。保存済みの設定がクリップボードにコピーされます。
@@ -99,3 +99,10 @@ GM ストレージ API はモックし、クリップボードの読み書きに
 Tampermonkey や Safari Userscripts によるインストール・実行は検証対象に含みません。
 結果は `test-results/results.json` に出力され、失敗時にはスクリーンショットとトレースも保存されます。
 ブラウザを表示する場合は `pnpm test --headed`、絞り込む場合は `pnpm test --grep "shortcut"` を使用してください。
+
+### リリース
+
+`main` への push 時に、workflow がユーザースクリプトをビルドし、
+`package.json` のバージョンを基にした `v` タグと GitHub Release を作成します。
+リリースごとにバージョンを更新してください。同じタグが別のコミットに存在する場合、
+workflow は失敗します。`v*` タグを push した場合もリリースを作成します。
