@@ -43,6 +43,9 @@ export const test = base.extend<Fixtures>({
         gmStorage.set(key, structuredClone(value));
       },
     );
+    await context.exposeBinding("__e2eGMDelete", (_source, key: string) => {
+      gmStorage.delete(key);
+    });
     const bundle = await readFile(
       new URL("../../dist/copylink-dev.user.js", import.meta.url),
       "utf8",
@@ -54,6 +57,7 @@ export const test = base.extend<Fixtures>({
         globalThis.GM = {
           getValue: (key, fallback) => globalThis.__e2eGMGet(key, fallback),
           setValue: (key, value) => globalThis.__e2eGMSet(key, value),
+          deleteValue: (key) => globalThis.__e2eGMDelete(key),
         };
         document.addEventListener('DOMContentLoaded', () => {
           ${bundle}

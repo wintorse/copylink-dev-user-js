@@ -3,6 +3,7 @@ import {
   DEFAULT_EMOJI_NAMES,
   GITHUB_PULL_REQUEST_STATUS_EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
+import { SettingsHostId, isMac } from "./constants";
 import {
   buildCustomRegexes,
   normalizeEmojiValue,
@@ -12,11 +13,12 @@ import {
   shortcutCommands,
   slackFields,
 } from "./settings-ui-config";
+import type { ImportData } from "@copylink-dev/shared/popup/importSettings";
 import type { LinkFormat } from "@copylink-dev/types/types";
 import type { Shortcut } from "./types";
+import { createSettingsTransferSection } from "./settings-ui-transfer";
 import { getMessage } from "./i18n";
 import { getShortcutKey } from "./shortcuts-utils";
-import { isMac } from "./constants";
 import settingsStyleText from "./settings-ui.css?raw";
 
 /** ID of the sheets range format dropdown. */
@@ -32,8 +34,6 @@ const sheetsRangeFormatOptions: Array<{
   { value: "plainUrl", labelKey: "sheetsRangeFormatPlainUrl" },
 ];
 
-/** Host element ID for the settings UI. */
-export const SettingsHostId = "copylink-dev-settings-host";
 /** Panel element ID for the settings UI. */
 export const SettingsPanelId = "copylink-dev-settings";
 
@@ -100,33 +100,15 @@ const isEditableTarget = (target: EventTarget | null): target is HTMLElement =>
   (target instanceof HTMLElement && target.isContentEditable);
 
 /**
- * Prevent site-level shortcut handlers (e.g. Google Sheets) from stealing
- * clipboard/edit shortcuts while the settings form is focused.
+ * Keep keyboard and paste events inside settings while preserving browser
+ * editing, navigation, and form behavior.
  *
  * @param shadow ShadowRoot hosting the settings UI.
  */
 const guardEditingShortcuts = (shadow: ShadowRoot) => {
-  shadow.addEventListener(
-    "keydown",
-    (event: Event) => {
-      if (!(event instanceof KeyboardEvent)) {
-        return;
-      }
-      const target = event.composedPath()[0] ?? event.target;
-      if (!isEditableTarget(target)) {
-        return;
-      }
-      const key = event.key.toLowerCase();
-      const isModifierPressed = event.metaKey || event.ctrlKey;
-      if (!isModifierPressed) {
-        return;
-      }
-      if (["v", "c", "x", "a", "z", "y"].includes(key)) {
-        event.stopPropagation();
-      }
-    },
-    true,
-  );
+  for (const type of ["keydown", "keypress", "keyup"]) {
+    shadow.addEventListener(type, (event) => event.stopPropagation());
+  }
 
   shadow.addEventListener(
     "paste",
@@ -418,7 +400,8 @@ const createCustomSitesFields = () => {
 
 type CreateSettingsPanelOptions = {
   onClose: () => void;
-  onSave: () => void;
+  onSave: (importedSettings: ImportData) => Promise<void>;
+  onImport: (text: string) => Promise<void>;
   getEffectiveShortcut: (commandKey: string) => Shortcut | undefined;
 };
 
@@ -431,12 +414,14 @@ type CreateSettingsPanelOptions = {
  * @param options Callback and resolver set used while building the panel.
  * @param options.onClose Handler invoked when the close button is pressed.
  * @param options.onSave Handler invoked when the save button is pressed.
+ * @param options.onImport Handler that validates and saves imported settings.
  * @param options.getEffectiveShortcut Resolver for effective shortcut by command key.
  * @returns Constructed panel element and ShadowRoot.
  */
 export const createSettingsPanel = ({
   onClose,
   onSave,
+  onImport,
   getEffectiveShortcut,
 }: CreateSettingsPanelOptions) => {
   const shadow = getShadowRoot();
@@ -505,6 +490,8 @@ export const createSettingsPanel = ({
   appendChildren(settingsContent, customDescription);
 
   appendChildren(settingsContent, createCustomSitesFields());
+  const transfer = createSettingsTransferSection(onImport);
+  appendChildren(settingsContent, transfer.section);
 
   const repoLinkSection = createElement("div", {
     className: "repo-link-section",
@@ -531,7 +518,23 @@ export const createSettingsPanel = ({
     className: "save-btn",
     text: getMessage("saveSettings"),
   });
-  saveBtn.addEventListener("click", onSave);
+  const handleSave = async () => {
+    if (saveBtn.disabled) {
+      return;
+    }
+    saveBtn.disabled = true;
+    try {
+      const importedSettings = transfer.readPending();
+      if (importedSettings !== null) {
+        await onSave(importedSettings);
+      }
+    } finally {
+      saveBtn.disabled = false;
+    }
+  };
+  saveBtn.addEventListener("click", () => {
+    handleSave().catch(console.error);
+  });
   appendChildren(panel, saveBtn);
 
   shadow.appendChild(panel);

@@ -54,6 +54,27 @@ for (const fixture of [
     emoji: ":redmine_ticket:",
   },
   {
+    name: "RedMica with a credit in the footer",
+    title: "Issue tracker",
+    body: '<div id="content"><h2>Feature #123</h2><div class="subject"><h3>Support RedMica issues</h3></div></div><div id="footer">Powered by <a href="https://github.com/redmica/redmica">RedMica</a></div>',
+    expectedTitle: "Feature #123: Support RedMica issues",
+    emoji: ":redmine_ticket:",
+  },
+  {
+    name: "RedMica without an issue title",
+    title: "Issue tracker",
+    body: '<div id="footer">Powered by <a href="https://github.com/redmica/redmica">RedMica</a></div><div id="content"><h2>Feature #123</h2></div>',
+    expectedTitle: "Issue tracker",
+    emoji: ":redmine_ticket:",
+  },
+  {
+    name: "a page mentioning RedMica outside footer links",
+    title: "Migration notes",
+    body: '<div id="footer">We migrated from RedMica</div><div id="content"><h2>Feature #123</h2><h3>Unrelated title</h3></div>',
+    expectedTitle: "Migration notes",
+    emoji: "",
+  },
+  {
     name: "Jira without an issue title",
     title: "Issue tracker",
     bodyId: "jira",

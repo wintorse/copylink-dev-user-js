@@ -72,6 +72,36 @@ test("copy-link-for-slack copies Markdown text and HTML", async ({
   expect(payload["text/html"]).toContain("<a href=");
 });
 
+test("copying with an emoji does not depend on the Sheets format", async ({
+  page,
+  gmStorage,
+  shortcutModifier,
+}) => {
+  // Given: Emoji settings are available, but reading the Sheets format fails.
+  gmStorage.set("emojiNames", { customWebsite1: ":test_link:" });
+  gmStorage.set("customRegexes", { customRegex1: "copylink-e2e\\.test" });
+  gmStorage.set("sheetsRangeFormat", "markdown");
+  const getValue = gmStorage.get.bind(gmStorage);
+  gmStorage.get = (key) => {
+    if (key === "sheetsRangeFormat") {
+      throw new Error("Format unavailable");
+    }
+    return getValue(key);
+  };
+  await gotoFixture(page);
+
+  // When: The Slack link shortcut is pressed.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+Shift+l`,
+    `[${fixtureMarkdownTitle}](${page.url()})`,
+    "リンクをクリップボードにコピーしました",
+  );
+
+  // Then: The stored custom emoji is included in the copied link.
+  expect(payload["text/html"]).toContain(":test_link:");
+});
+
 test("the toast opens settings and the close button hides them", async ({
   page,
   shortcutModifier,
@@ -189,6 +219,297 @@ test("a shortcut inside an iframe copies the top page and shows one toast", asyn
   await expect(page.locator(".copylink-dev-toast")).toHaveCount(1);
   await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
   await expect(frame.locator("#copylink-dev-settings-host")).toHaveCount(0);
+});
+
+test("a dynamically added cross-origin iframe receives updated shortcuts", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: A cross-origin iframe is added and its default title shortcut works.
+  await page.route("https://frame.copylink-e2e.test/frame.html", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: '<html><body><input id="editor"></body></html>',
+    }),
+  );
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    const frame = document.createElement("iframe");
+    frame.title = "Cross-origin frame";
+    frame.src = "https://frame.copylink-e2e.test/frame.html";
+    document.body.appendChild(frame);
+  });
+  const frame = page.frameLocator('iframe[title="Cross-origin frame"]');
+  const editor = frame.locator("#editor");
+  await expect(editor).toBeVisible();
+  await copyWithShortcut(
+    page,
+    `${shortcutModifier}+t`,
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Observe synchronization so the next keypress cannot race the update.
+  await editor.evaluate(() => {
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window.top &&
+        event.data?.type === "copylink-dev:sync-shortcuts" &&
+        event.data.shortcuts?.["copy-title"]?.key === "k"
+      ) {
+        document.body.dataset.shortcutSynced = "true";
+      }
+    });
+  });
+
+  // When: A new title shortcut is saved in the top page's settings.
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#shortcut-copy-title").press("Control+Shift+k");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: The settings close and the iframe receives the updated shortcut.
+  await expect(panel).toBeHidden();
+  await expect(frame.locator("body")).toHaveAttribute(
+    "data-shortcut-synced",
+    "true",
+  );
+
+  const toastCount = await page.locator(".copylink-dev-toast").count();
+
+  // When: The updated shortcut is pressed inside the iframe.
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Then: The top page title is copied and only the top page shows a new toast.
+  await expect(page.locator(".copylink-dev-toast")).toHaveCount(toastCount + 1);
+  await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
+});
+
+test("an open tab refreshes shortcuts changed in another tab", async ({
+  page,
+  context,
+  shortcutModifier,
+}) => {
+  // Given: A page and its iframe are open before another tab changes settings.
+  await gotoFixture(page);
+  const frame = page.frameLocator("iframe[title='Fixture frame']");
+  await frame.locator("#editor").evaluate(() => {
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window.top &&
+        event.data?.type === "copylink-dev:sync-shortcuts" &&
+        event.data.shortcuts?.["copy-title"]?.key === "k"
+      ) {
+        document.body.dataset.shortcutSynced = "true";
+      }
+    });
+  });
+  const other = await context.newPage();
+  await gotoFixture(other);
+  await openSettings(other, `${shortcutModifier}+t`);
+  const panel = other.locator("#copylink-dev-settings");
+
+  // When: The title shortcut is changed and the original tab is focused again.
+  await panel.locator("#shortcut-copy-title").press("Control+Shift+k");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(panel).toBeHidden();
+  await page.bringToFront();
+  // Headless Chromium keeps each tab focused, so simulate the focus event.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+
+  // Then: The frame receives the new shortcut without reloading the page.
+  await expect(frame.locator("body")).toHaveAttribute(
+    "data-shortcut-synced",
+    "true",
+  );
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    page.locator("#editor"),
+  );
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    frame.locator("#editor"),
+  );
+
+  // When: The former title shortcut is pressed on the original page.
+  await page.evaluate(() => {
+    document.addEventListener("keydown", (event) => {
+      if (event.key.toLowerCase() === "t") {
+        document.body.dataset.oldShortcutPrevented = String(
+          event.defaultPrevented,
+        );
+      }
+    });
+  });
+  await page.locator("#editor").press(`${shortcutModifier}+t`);
+
+  // Then: The old shortcut no longer executes the copylink command.
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-old-shortcut-prevented",
+    "false",
+  );
+});
+
+test("a cross-origin iframe inside nested shadow roots uses top-page shortcuts", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: A cross-origin iframe is inserted inside nested open shadow roots.
+  await page.route("https://shadow.copylink-e2e.test/frame.html", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: '<html><body><input id="editor"></body></html>',
+    }),
+  );
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    const host = document.createElement("div");
+    const outer = host.attachShadow({ mode: "open" });
+    const nestedHost = document.createElement("div");
+    const inner = nestedHost.attachShadow({ mode: "open" });
+    const frame = document.createElement("iframe");
+    frame.title = "Shadow frame";
+    frame.src = "https://shadow.copylink-e2e.test/frame.html";
+    inner.append(frame);
+    outer.append(nestedHost);
+    document.body.append(host);
+  });
+  const frame = page.frameLocator('iframe[title="Shadow frame"]');
+  const editor = frame.locator("#editor");
+  await expect(editor).toBeVisible();
+
+  // When: The default link shortcut is pressed inside the shadow iframe.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+l`,
+    fixtureTitle,
+    "リンクをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Then: The top page's link is copied and its toast is shown once.
+  expect(payload["text/html"]).toContain(`href="${page.url()}"`);
+  await expect(page.locator(".copylink-dev-toast")).toHaveCount(1);
+  await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
+
+  // Given: The frame records the next shortcut synchronization from the top page.
+  await editor.evaluate(() => {
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window.top &&
+        event.data?.type === "copylink-dev:sync-shortcuts" &&
+        event.data.shortcuts?.["copy-title"]?.key === "k"
+      ) {
+        document.body.dataset.shortcutSynced = "true";
+      }
+    });
+  });
+
+  // When: The title shortcut is changed in the top page's settings.
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#shortcut-copy-title").press("Control+Shift+k");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: The shadow iframe receives the changed shortcut.
+  await expect(panel).toBeHidden();
+  await expect(frame.locator("body")).toHaveAttribute(
+    "data-shortcut-synced",
+    "true",
+  );
+
+  // When: The changed title shortcut is pressed in the iframe.
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Then: The top page's title is copied and the frame displays no toast.
+  await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
+});
+
+test("clipboard fallback copies the link and preserves the page selection", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: The native HTML clipboard write fails and page text is selected.
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "write", {
+      configurable: true,
+      value: () => Promise.reject(new Error("Clipboard unavailable")),
+    });
+    const heading = document.querySelector("h1");
+    if (!heading) {
+      throw new Error("Fixture heading not found");
+    }
+    const range = document.createRange();
+    range.selectNodeContents(heading);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  });
+
+  // When: The copy-link shortcut is pressed.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+l`,
+    fixtureTitle,
+    "リンクをクリップボードにコピーしました",
+  );
+
+  // Then: The fallback copies the HTML link and restores the original selection.
+  const anchor = await page.evaluate((html) => {
+    const link = new DOMParser()
+      .parseFromString(html, "text/html")
+      .querySelector("a");
+    return { href: link?.href, title: link?.textContent };
+  }, payload["text/html"]);
+  expect(anchor).toEqual({ href: page.url(), title: fixtureTitle });
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+    "UserScript E2E fixture",
+  );
+});
+
+test("clipboard failure shows a failure toast with access to settings", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: Both the clipboard API and its fallback fail.
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: () => Promise.reject(new Error("Clipboard unavailable")),
+    });
+    // oxlint-disable-next-line no-deprecated -- Simulate failure of the legacy clipboard fallback.
+    document.execCommand = () => false;
+  });
+
+  // When: The copy-title shortcut is pressed.
+  await page.keyboard.press(`${shortcutModifier}+t`);
+
+  // Then: A failure toast appears and its settings button opens the panel.
+  const toast = page.locator(".copylink-dev-toast").last();
+  await expect(toast).toContainText("タイトルのコピーに失敗しました");
+  await toast.getByRole("button", { name: "設定", exact: true }).click();
+  await expect(page.locator("#copylink-dev-settings")).toBeVisible();
 });
 
 test("Alt-modified shortcuts save base keys and work after reload", async ({
@@ -405,4 +726,81 @@ test("editing shortcuts stay inside editable settings fields", async ({
   expect(
     await page.evaluate(() => document.body.dataset.siteShortcutTriggered),
   ).toBeUndefined();
+});
+
+test("typing and editing in settings do not trigger page shortcuts", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: Settings are open and the page listens for bubbling keyboard events.
+  await gotoFixture(page);
+  await openSettings(page, `${shortcutModifier}+t`);
+  await page.evaluate(() => {
+    for (const type of ["keydown", "keypress", "keyup"]) {
+      document.addEventListener(type, () => {
+        document.body.dataset.siteKeyEvents = "received";
+      });
+      window.addEventListener(type, () => {
+        document.body.dataset.windowKeyEvents = "received";
+      });
+    }
+  });
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#importButton").click();
+  const emoji = panel.locator("#github");
+  const regex = panel.locator("#customRegex1");
+  const textarea = panel.locator("#importTextarea");
+  await emoji.fill("");
+  await regex.fill("");
+
+  // When: Text is typed into each kind of editable settings field.
+  await emoji.pressSequentially("github");
+  await regex.pressSequentially("example");
+  await textarea.pressSequentially("test");
+
+  // Then: Text is entered normally without reaching the page's shortcuts.
+  await expect(emoji).toHaveValue("github");
+  await expect(regex).toHaveValue("example");
+  await expect(textarea).toHaveValue("test");
+  expect(
+    await page.evaluate(() => ({
+      document: document.body.dataset.siteKeyEvents,
+      window: document.body.dataset.windowKeyEvents,
+    })),
+  ).toEqual({ document: undefined, window: undefined });
+
+  // When: Text is selected, copied, and pasted between settings fields.
+  await emoji.press("ControlOrMeta+a");
+  await emoji.press("ControlOrMeta+c");
+  await textarea.press("ControlOrMeta+a");
+  await textarea.press("ControlOrMeta+v");
+
+  // Then: Native editing works without activating page shortcuts.
+  await expect(textarea).toHaveValue("github");
+  expect(
+    await page.evaluate(() => document.body.dataset.siteKeyEvents),
+  ).toBeUndefined();
+
+  // When: A copylink shortcut is pressed while editing a settings field.
+  await page.evaluate(() => navigator.clipboard.writeText("unchanged"));
+  await emoji.press(`${shortcutModifier}+t`);
+
+  // Then: The settings field keeps focus and the shortcut does not copy the page title.
+  await expect(emoji).toBeFocused();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "unchanged",
+  );
+
+  // When: The same text is entered outside the settings panel.
+  await page.locator("#editor").pressSequentially("g");
+
+  // Then: The page's normal keyboard listeners still receive the event.
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-site-key-events",
+    "received",
+  );
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-window-key-events",
+    "received",
+  );
 });

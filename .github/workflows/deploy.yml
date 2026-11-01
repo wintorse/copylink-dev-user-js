@@ -20,7 +20,7 @@ jobs:
           submodules: true
 
       - name: Setup pnpm and Node.js
-        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
         with:
           cache: true
           install: false
@@ -31,10 +31,32 @@ jobs:
       - name: Build
         run: pnpm run build # generates dist/copylink-dev.user.js
 
+      - name: Determine release tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            echo "RELEASE_TAG=$REF_NAME" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_TAG=v$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+          fi
+
+      - name: Verify existing release tag
+        if: github.ref_type == 'branch'
+        run: |
+          existing_commit=$(git ls-remote origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" |
+            awk '$2 ~ /\^\{\}$/ { peeled = $1; next } { tag = $1 } END { print peeled ? peeled : tag }')
+          if [ -n "$existing_commit" ] && [ "$existing_commit" != "$GITHUB_SHA" ]; then
+            echo "::error::Tag $RELEASE_TAG already points to a different commit. Update the version in package.json."
+            exit 1
+          fi
+
       - name: Create GitHub Release
-        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
           files: dist/copylink-dev.user.js
           generate_release_notes: true
         # env:

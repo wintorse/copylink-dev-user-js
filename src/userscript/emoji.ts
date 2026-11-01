@@ -1,10 +1,5 @@
-import {
-  getCachedCustomRegexes,
-  getCachedEmojiNames,
-  isSettingsLoaded,
-  refreshSettingsCache,
-} from "./cache";
 import { buildPageContext } from "@copylink-dev/shared/pageContext";
+import { getEmojiSettings } from "./settings-storage";
 import { resolveEmojiName } from "@copylink-dev/shared/emojiResolver";
 
 /**
@@ -13,12 +8,6 @@ import { resolveEmojiName } from "@copylink-dev/shared/emojiResolver";
  * @returns Resolved emoji name string.
  */
 export const getEmojiName = async (): Promise<string> => {
-  if (!isSettingsLoaded()) {
-    await refreshSettingsCache();
-  }
-
-  return resolveEmojiName(buildPageContext(), {
-    emojiNames: getCachedEmojiNames(),
-    customRegexes: getCachedCustomRegexes(),
-  });
+  const settings = await getEmojiSettings();
+  return resolveEmojiName(buildPageContext(), settings);
 };

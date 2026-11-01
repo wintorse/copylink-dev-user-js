@@ -1,5 +1,8 @@
 import type { ShortcutMap } from "./types";
 
+/** Host element ID for the settings UI. */
+export const SettingsHostId = "copylink-dev-settings-host";
+
 export const isMac = /Mac/.test(navigator.userAgent);
 
 export const defaultShortcuts: ShortcutMap = isMac
