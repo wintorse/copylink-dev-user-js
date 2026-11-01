@@ -10,6 +10,19 @@ This repository provides a UserScript version of [copylink-dev](https://github.c
 - Emoji and custom website settings are also managed in the same settings panel.
 - Works in browsers that do not support Chrome extensions (e.g., Safari) by using UserScript.
 
+## Import and export settings
+
+Share emoji names and custom regexes using the same JSON format as the browser extension.
+
+1. Click **Settings** in a copy notification and scroll to **Import and export settings**.
+2. Click **Export** to copy the saved settings to the clipboard.
+3. To import, click **Import**, paste the JSON, and click **Overwrite and save settings**. Imported settings are saved and used for copying immediately.
+
+The **Save** button at the bottom also imports the pasted JSON and saves your other form edits.
+
+Each supplied `emojiNames` or `customRegexes` section replaces that entire section. Omitted sections keep their current values; an empty object `{}` resets the supplied section.
+Shortcuts and the Sheets range link format keep their existing settings.
+
 ## Submodule
 
 This repository uses `copylink-dev` as a git submodule.

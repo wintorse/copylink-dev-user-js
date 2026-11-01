@@ -75,6 +75,11 @@
   color: #000;
 }
 
+.save-btn,
+.settings-transfer button {
+  block-size: 36px;
+}
+
 .save-btn {
   width: calc(100% - 40px);
   margin: 12px 20px;
@@ -185,6 +190,72 @@
 
 .settings-content input[aria-invalid="true"] {
   border-color: #b91c1c;
+}
+
+.settings-transfer {
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.transfer-actions > button {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.settings-transfer button {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings-transfer button:hover:not(:disabled) {
+  background-color: #eee;
+}
+
+.settings-transfer button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+#importGroup {
+  margin-top: 12px;
+}
+
+#importConfirmButton {
+  inline-size: 100%;
+}
+
+#importTextarea {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  margin: 6px 0 8px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  resize: vertical;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  font: 0.8rem / 1.2 monospace;
+}
+
+#importTextarea[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+
+#copylink-dev-settings #importErrorMessage {
+  color: #b91c1c;
 }
 
 .repo-link-section {

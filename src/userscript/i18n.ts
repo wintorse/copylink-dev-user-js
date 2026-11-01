@@ -19,7 +19,22 @@ export const i18nMessages = {
       "URLを正規表現で指定すると、お好みのWebサイトで指定した絵文字をコピーします。",
     saveSettings: "保存",
     settingsSaved: "設定を保存しました",
+    settingsSaveFailure:
+      "設定の保存に失敗しました。設定は変更されていません。もう一度お試しください。",
+    settingsRestoreFailure:
+      "設定の保存と復元に失敗しました。保存済みの設定を確認してください。",
     settingsButton: "設定",
+    importExportSettings: "設定のインポート・エクスポート",
+    importExportDescription:
+      "絵文字名とカスタム正規表現を JSON で共有できます。",
+    importSettings: "インポート",
+    exportSettings: "エクスポート",
+    importJsonLabel: "設定の JSON を貼り付け",
+    importConfirmButton: "上書きして設定を保存",
+    importSuccess: "設定をインポートしました",
+    importFailure: "インポートに失敗しました。データの形式を確認してください。",
+    exportSuccess: "絵文字名とカスタム正規表現をクリップボードにコピーしました",
+    exportFailure: "絵文字名とカスタム正規表現のエクスポートに失敗しました",
     customWebsiteRegex: "カスタムWebサイト %num% - 正規表現",
     customWebsiteEmoji: "カスタムWebサイト %num% - 絵文字",
     invalidCustomRegex: "正規表現が正しくありません",
@@ -71,7 +86,21 @@ export const i18nMessages = {
       "Add custom websites to use emojis. You can use regular expressions to match URLs.",
     saveSettings: "Save",
     settingsSaved: "Settings saved",
+    settingsSaveFailure:
+      "Failed to save settings. Your settings are unchanged. Please try again.",
+    settingsRestoreFailure:
+      "Failed to save and restore settings. Please check your saved settings.",
     settingsButton: "Settings",
+    importExportSettings: "Import and export settings",
+    importExportDescription: "Share emoji names and custom regexes as JSON.",
+    importSettings: "Import",
+    exportSettings: "Export",
+    importJsonLabel: "Paste settings JSON",
+    importConfirmButton: "Overwrite and save settings",
+    importSuccess: "Settings imported",
+    importFailure: "Import failed. Check the data format.",
+    exportSuccess: "Emoji names and custom regexes copied to clipboard",
+    exportFailure: "Failed to export emoji names and custom regexes",
     customWebsiteRegex: "Custom website %num% - Regex",
     customWebsiteEmoji: "Custom website %num% - Emoji",
     invalidCustomRegex: "Invalid regular expression.",
@@ -121,7 +150,19 @@ export const i18nMessages = {
       "使用正则表达式指定URL，以便在您喜欢的网站上复制表情符号。",
     saveSettings: "保存",
     settingsSaved: "设置已保存",
+    settingsSaveFailure: "设置保存失败。原有设置未更改，请重试。",
+    settingsRestoreFailure: "设置保存和恢复失败。请检查已保存的设置。",
     settingsButton: "设置",
+    importExportSettings: "导入和导出设置",
+    importExportDescription: "以 JSON 格式分享表情符号名称和自定义正则表达式。",
+    importSettings: "导入",
+    exportSettings: "导出",
+    importJsonLabel: "粘贴设置 JSON",
+    importConfirmButton: "覆盖并保存设置",
+    importSuccess: "设置已导入",
+    importFailure: "导入失败。请检查数据格式。",
+    exportSuccess: "表情符号名称和自定义正则表达式已复制到剪贴板",
+    exportFailure: "无法导出表情符号名称和自定义正则表达式",
     customWebsiteRegex: "自定义网站 %num% - 正则表达式",
     customWebsiteEmoji: "自定义网站 %num% - 表情符号",
     invalidCustomRegex: "正则表达式无效。",
@@ -185,3 +226,14 @@ export const getMessage = (
     message,
   );
 };
+
+/**
+ * Describe a storage failure, distinguishing unsuccessful restoration.
+ *
+ * @param rollbackFailed Whether restoring the original settings failed.
+ * @returns Localized save failure message.
+ */
+export const getSettingsSaveFailureMessage = (
+  rollbackFailed: boolean,
+): string =>
+  getMessage(rollbackFailed ? "settingsRestoreFailure" : "settingsSaveFailure");

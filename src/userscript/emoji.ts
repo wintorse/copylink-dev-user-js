@@ -1,7 +1,6 @@
 import {
   getCachedCustomRegexes,
   getCachedEmojiNames,
-  isSettingsLoaded,
   refreshSettingsCache,
 } from "./cache";
 import { buildPageContext } from "@copylink-dev/shared/pageContext";
@@ -13,9 +12,8 @@ import { resolveEmojiName } from "@copylink-dev/shared/emojiResolver";
  * @returns Resolved emoji name string.
  */
 export const getEmojiName = async (): Promise<string> => {
-  if (!isSettingsLoaded()) {
-    await refreshSettingsCache();
-  }
+  // Other tabs can import or save settings after this page has initialized.
+  await refreshSettingsCache();
 
   return resolveEmojiName(buildPageContext(), {
     emojiNames: getCachedEmojiNames(),
