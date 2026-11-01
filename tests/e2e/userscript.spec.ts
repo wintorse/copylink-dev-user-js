@@ -262,6 +262,87 @@ test("a dynamically added cross-origin iframe receives updated shortcuts", async
   await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
 });
 
+test("a cross-origin iframe inside nested shadow roots uses top-page shortcuts", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: A cross-origin iframe is inserted inside nested open shadow roots.
+  await page.route("https://shadow.copylink-e2e.test/frame.html", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: '<html><body><input id="editor"></body></html>',
+    }),
+  );
+  await gotoFixture(page);
+  await page.evaluate(() => {
+    const host = document.createElement("div");
+    const outer = host.attachShadow({ mode: "open" });
+    const nestedHost = document.createElement("div");
+    const inner = nestedHost.attachShadow({ mode: "open" });
+    const frame = document.createElement("iframe");
+    frame.title = "Shadow frame";
+    frame.src = "https://shadow.copylink-e2e.test/frame.html";
+    inner.append(frame);
+    outer.append(nestedHost);
+    document.body.append(host);
+  });
+  const frame = page.frameLocator('iframe[title="Shadow frame"]');
+  const editor = frame.locator("#editor");
+  await expect(editor).toBeVisible();
+
+  // When: The default link shortcut is pressed inside the shadow iframe.
+  const payload = await copyWithShortcut(
+    page,
+    `${shortcutModifier}+l`,
+    fixtureTitle,
+    "リンクをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Then: The top page's link is copied and its toast is shown once.
+  expect(payload["text/html"]).toContain(`href="${page.url()}"`);
+  await expect(page.locator(".copylink-dev-toast")).toHaveCount(1);
+  await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
+
+  // Given: The frame records the next shortcut synchronization from the top page.
+  await editor.evaluate(() => {
+    window.addEventListener("message", (event) => {
+      if (
+        event.source === window.top &&
+        event.data?.type === "copylink-dev:sync-shortcuts" &&
+        event.data.shortcuts?.["copy-title"]?.key === "k"
+      ) {
+        document.body.dataset.shortcutSynced = "true";
+      }
+    });
+  });
+
+  // When: The title shortcut is changed in the top page's settings.
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#shortcut-copy-title").press("Control+Shift+k");
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: The shadow iframe receives the changed shortcut.
+  await expect(panel).toBeHidden();
+  await expect(frame.locator("body")).toHaveAttribute(
+    "data-shortcut-synced",
+    "true",
+  );
+
+  // When: The changed title shortcut is pressed in the iframe.
+  await copyWithShortcut(
+    page,
+    "Control+Shift+k",
+    fixtureTitle,
+    "タイトルをクリップボードにコピーしました",
+    editor,
+  );
+
+  // Then: The top page's title is copied and the frame displays no toast.
+  await expect(frame.locator(".copylink-dev-toast")).toHaveCount(0);
+});
+
 test("clipboard fallback copies the link and preserves the page selection", async ({
   page,
   shortcutModifier,
