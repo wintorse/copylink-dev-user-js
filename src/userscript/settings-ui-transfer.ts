@@ -3,8 +3,9 @@ import {
   type ImportData,
   parseImportedSettings,
 } from "@copylink-dev/shared/popup/importSettings";
+import { getMessage, getSettingsSaveFailureMessage } from "./i18n";
+import { SettingsStorageError } from "./settings-storage";
 import { copyToClipboardShared } from "@copylink-dev/shared/clipboard/copyToClipboardShared";
-import { getMessage } from "./i18n";
 
 /**
  * Clear transient transfer UI whenever saved settings are loaded.
@@ -108,9 +109,16 @@ export const createSettingsTransferSection = (
     errorMessage.textContent = "";
     importMessage.textContent = "";
   });
-  const showImportError = () => {
-    textarea.setAttribute("aria-invalid", "true");
-    errorMessage.textContent = getMessage("importFailure");
+  const showImportError = (error?: unknown) => {
+    if (error instanceof SettingsStorageError) {
+      textarea.removeAttribute("aria-invalid");
+      errorMessage.textContent = getSettingsSaveFailureMessage(
+        error.rollbackFailed,
+      );
+    } else {
+      textarea.setAttribute("aria-invalid", "true");
+      errorMessage.textContent = getMessage("importFailure");
+    }
     textarea.focus();
   };
   const readPending = (): ImportData | null => {
@@ -123,8 +131,8 @@ export const createSettingsTransferSection = (
     }
     try {
       return parseImportedSettings(text);
-    } catch {
-      showImportError();
+    } catch (error) {
+      showImportError(error);
       return null;
     }
   };
@@ -140,8 +148,8 @@ export const createSettingsTransferSection = (
       textarea.value = "";
       textarea.removeAttribute("aria-invalid");
       importMessage.textContent = getMessage("importSuccess");
-    } catch {
-      showImportError();
+    } catch (error) {
+      showImportError(error);
     } finally {
       confirmButton.disabled = false;
     }

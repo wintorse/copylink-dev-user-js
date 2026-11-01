@@ -534,6 +534,234 @@ test("invalid imports preserve saved settings and form edits, then allow correct
   expect(gmStorage.get("customRegexes")).toEqual({ customRegex1: "valid" });
 });
 
+for (const action of [
+  {
+    name: "import confirmation",
+    selector: "#importConfirmButton",
+    savesForm: false,
+  },
+  { name: "main Save", selector: ".save-btn", savesForm: true },
+]) {
+  for (const hasSavedEmojis of [true, false]) {
+    test(`${action.name} restores ${hasSavedEmojis ? "existing" : "initially unset"} settings after a write failure`, async ({
+      page,
+      gmStorage,
+      shortcutModifier,
+    }) => {
+      // Given: Both import sections are ready and the regex write will fail once.
+      if (hasSavedEmojis) {
+        gmStorage.set("emojiNames", {
+          github: ":saved:",
+          customWebsite1: ":saved_link:",
+        });
+      }
+      gmStorage.set("customRegexes", { customRegex1: "copylink-e2e\\.test" });
+      gmStorage.set("userShortcuts", {
+        "copy-link": {
+          key: "j",
+          ctrl: true,
+          shift: true,
+          alt: false,
+          meta: false,
+        },
+      });
+      gmStorage.set("sheetsRangeFormat", "html");
+      const originalSettings = structuredClone([...gmStorage]);
+      await gotoFixture(page);
+      await openSettings(page, `${shortcutModifier}+t`);
+      const panel = page.locator("#copylink-dev-settings");
+      await panel.locator("#github").fill(":edited:");
+      await panel.locator("#shortcut-copy-link").press("Control+Shift+k");
+      await panel.locator("#sheets-range-format").selectOption("markdown");
+      await panel.locator("#importButton").click();
+      const json = JSON.stringify({
+        emojiNames: { github: ":imported:", customWebsite1: ":imported_link:" },
+        customRegexes: { customRegex1: "copylink-e2e\\.test" },
+      });
+      await panel.locator("#importTextarea").fill(json);
+      const originalSet = gmStorage.set.bind(gmStorage);
+      let failNextRegexWrite = true;
+      gmStorage.set = (key, value) => {
+        if (key === "customRegexes" && failNextRegexWrite) {
+          failNextRegexWrite = false;
+          throw new Error("Storage unavailable");
+        }
+        return originalSet(key, value);
+      };
+
+      // When: Saving the import fails after the emoji section was written.
+      await panel.locator(action.selector).click();
+
+      // Then: Storage is restored, edits remain, and no success is reported.
+      const error = action.savesForm
+        ? page.locator(".copylink-dev-toast").last()
+        : panel.locator("#importErrorMessage");
+      await expect(error).toContainText(
+        "設定の保存に失敗しました。設定は変更されていません。",
+      );
+      expect([...gmStorage]).toEqual(originalSettings);
+      await expect(panel).toBeVisible();
+      await expect(panel.locator("#github")).toHaveValue(":edited:");
+      await expect(panel.locator("#importTextarea")).toHaveValue(json);
+      await expect(panel.locator("#importTextarea")).not.toHaveAttribute(
+        "aria-invalid",
+      );
+      await expect(panel.locator("#importMessage")).toBeEmpty();
+      await expect(panel.locator(action.selector)).toBeEnabled();
+
+      // When: A link is copied without reopening the settings panel.
+      const payload = await copyWithShortcut(
+        page,
+        `${shortcutModifier}+Shift+l`,
+        `[${fixtureMarkdownTitle}](${page.url()})`,
+        "リンクをクリップボードにコピーしました",
+      );
+
+      // Then: Copying uses the original settings rather than the failed import.
+      expect(payload["text/html"]).not.toContain(":imported_link:");
+      if (hasSavedEmojis) {
+        expect(payload["text/html"]).toContain(":saved_link:");
+      }
+
+      // When: The same import is retried after storage recovers.
+      await panel.locator(action.selector).click();
+
+      // Then: Both sections save successfully and the requested form edits are handled.
+      if (action.savesForm) {
+        await expect(panel).toBeHidden();
+      } else {
+        await expect(panel.locator("#importMessage")).toHaveText(
+          "設定をインポートしました",
+        );
+        await expect(panel.locator("#github")).toHaveValue(":imported:");
+      }
+      expect(gmStorage.get("emojiNames")).toMatchObject({
+        github: ":imported:",
+      });
+      expect(gmStorage.get("customRegexes")).toEqual({
+        customRegex1: "copylink-e2e\\.test",
+      });
+      expect(gmStorage.get("userShortcuts")).toMatchObject({
+        "copy-link": { key: action.savesForm ? "k" : "j" },
+      });
+      expect(gmStorage.get("sheetsRangeFormat")).toBe(
+        action.savesForm ? "markdown" : "html",
+      );
+    });
+  }
+}
+
+test("main Save restores all settings when the last write fails", async ({
+  page,
+  gmStorage,
+  shortcutModifier,
+}) => {
+  // Given: Form changes affect every stored section and the final format write will fail.
+  gmStorage.set("emojiNames", { github: ":saved:" });
+  gmStorage.set("customRegexes", { customRegex1: "old" });
+  gmStorage.set("userShortcuts", {});
+  gmStorage.set("sheetsRangeFormat", "html");
+  const originalSettings = structuredClone([...gmStorage]);
+  await gotoFixture(page);
+  await openSettings(page, `${shortcutModifier}+t`);
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#github").fill(":edited:");
+  await panel.locator("#customRegex1").fill("new");
+  await panel.locator("#shortcut-copy-link").press("Control+Shift+k");
+  await panel.locator("#sheets-range-format").selectOption("markdown");
+  const originalSet = gmStorage.set.bind(gmStorage);
+  let failNextFormatWrite = true;
+  gmStorage.set = (key, value) => {
+    if (key === "sheetsRangeFormat" && failNextFormatWrite) {
+      failNextFormatWrite = false;
+      throw new Error("Storage unavailable");
+    }
+    return originalSet(key, value);
+  };
+
+  // When: The final write fails after the other sections were stored.
+  await panel.getByRole("button", { name: "保存", exact: true }).click();
+
+  // Then: All original values return and the user's form edits remain visible.
+  await expect(page.locator(".copylink-dev-toast").last()).toContainText(
+    "設定は変更されていません",
+  );
+  expect([...gmStorage]).toEqual(originalSettings);
+  await expect(panel).toBeVisible();
+  await expect(panel.locator("#github")).toHaveValue(":edited:");
+  await expect(panel.locator("#shortcut-copy-link")).toHaveValue(
+    "Ctrl + Shift + K",
+  );
+});
+
+for (const action of [
+  {
+    name: "import confirmation",
+    selector: "#importConfirmButton",
+    failKey: "customRegexes",
+    restoreKey: "emojiNames",
+  },
+  {
+    name: "main Save",
+    selector: ".save-btn",
+    failKey: "sheetsRangeFormat",
+    restoreKey: "userShortcuts",
+  },
+]) {
+  test(`${action.name} distinguishes failed restoration from an ordinary save failure`, async ({
+    page,
+    gmStorage,
+    shortcutModifier,
+  }) => {
+    // Given: A save will fail, followed by a failure to restore one earlier section.
+    gmStorage.set("emojiNames", { github: ":saved:" });
+    gmStorage.set("customRegexes", { customRegex1: "old" });
+    gmStorage.set("userShortcuts", {});
+    gmStorage.set("sheetsRangeFormat", "html");
+    await gotoFixture(page);
+    await openSettings(page, `${shortcutModifier}+t`);
+    const panel = page.locator("#copylink-dev-settings");
+    await panel.locator("#github").fill(":edited:");
+    await panel.locator("#sheets-range-format").selectOption("markdown");
+    await panel.locator("#importButton").click();
+    const json =
+      '{"emojiNames":{"github":":imported:"},"customRegexes":{"customRegex1":"new"}}';
+    await panel.locator("#importTextarea").fill(json);
+    const originalSet = gmStorage.set.bind(gmStorage);
+    let saveFailed = false;
+    gmStorage.set = (key, value) => {
+      if (key === action.failKey && !saveFailed) {
+        saveFailed = true;
+        throw new Error("Storage unavailable");
+      }
+      if (key === action.restoreKey && saveFailed) {
+        throw new Error("Restoration unavailable");
+      }
+      return originalSet(key, value);
+    };
+
+    // When: Saving fails and the rollback cannot restore every section.
+    await panel.locator(action.selector).click();
+
+    // Then: A distinct error reports the incomplete restoration and preserves input.
+    const error =
+      action.selector === ".save-btn"
+        ? page.locator(".copylink-dev-toast").last()
+        : panel.locator("#importErrorMessage");
+    await expect(error).toContainText("設定の保存と復元に失敗しました");
+    await expect(error).not.toContainText("設定は変更されていません");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator("#github")).toHaveValue(":edited:");
+    await expect(panel.locator("#importTextarea")).toHaveValue(json);
+    await expect(panel.locator("#importMessage")).toBeEmpty();
+    // Remaining sections are still restored after an individual rollback failure.
+    expect(gmStorage.get("customRegexes")).toEqual({ customRegex1: "old" });
+    if (action.selector === ".save-btn") {
+      expect(gmStorage.get("emojiNames")).toEqual({ github: ":saved:" });
+    }
+  });
+}
+
 test("export reports clipboard and storage failures", async ({
   page,
   shortcutModifier,

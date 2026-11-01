@@ -24,12 +24,9 @@ import {
   getCachedEmojiNames,
   getCachedSheetsRangeFormat,
   getUserShortcuts,
-  refreshSettingsCache,
-  updateCustomRegexes,
-  updateEmojiNames,
-  updateSheetsRangeFormat,
-  updateShortcut,
+  updateSettings,
 } from "./cache";
+import { getMessage, getSettingsSaveFailureMessage } from "./i18n";
 import {
   isCustomRegexKey,
   isEmojiKey,
@@ -37,8 +34,8 @@ import {
   isShortcut,
   shortcutCommands,
 } from "./settings-ui-config";
+import { SettingsStorageError } from "./settings-storage";
 import type { ShortcutMap } from "./types";
-import { getMessage } from "./i18n";
 import { resetSettingsTransferUI } from "./settings-ui-transfer";
 import { showToast } from "./toast";
 
@@ -74,12 +71,11 @@ const loadCustomRegexSettings = (root: ParentNode) => {
  */
 export const importSettings = async (text: string, root: ParentNode) => {
   const data = parseImportedSettings(text);
+  await updateSettings(data);
   if (data.emojiNames !== undefined) {
-    await updateEmojiNames(data.emojiNames);
     loadEmojiSettings(root);
   }
   if (data.customRegexes !== undefined) {
-    await updateCustomRegexes(data.customRegexes);
     loadCustomRegexSettings(root);
   }
 };
@@ -228,16 +224,21 @@ export const saveSettings = async ({
   );
   const format = formatSelect?.value;
 
-  await updateEmojiNames(emojiNames);
-  await updateCustomRegexes(customRegexes);
-  for (const [commandKey, shortcut] of Object.entries(shortcuts)) {
-    await updateShortcut(commandKey, shortcut);
-  }
-  if (isSheetsRangeFormat(format)) {
-    await updateSheetsRangeFormat(format);
+  try {
+    await updateSettings({
+      emojiNames,
+      customRegexes,
+      userShortcuts: shortcuts,
+      ...(isSheetsRangeFormat(format) ? { sheetsRangeFormat: format } : {}),
+    });
+  } catch (error) {
+    if (!(error instanceof SettingsStorageError)) {
+      throw error;
+    }
+    await showToast(getSettingsSaveFailureMessage(error.rollbackFailed));
+    return;
   }
 
-  await refreshSettingsCache();
   await showToast(getMessage("settingsSaved"));
   hidePanel();
   onSaved?.();

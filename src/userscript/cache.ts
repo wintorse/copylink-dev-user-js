@@ -5,6 +5,7 @@ import type {
 } from "@copylink-dev/types/types";
 import type { CUSTOM_REGEX_KEYS } from "@copylink-dev/shared/constants";
 import { isSheetsRangeFormat } from "./settings-ui-config";
+import { saveStoredSettings } from "./settings-storage";
 
 export type UserShortcuts = Record<string, ShortcutDefinition>;
 
@@ -14,6 +15,13 @@ export type ShortcutDefinition = {
   shift: boolean;
   alt: boolean;
   meta: boolean;
+};
+
+type SettingsValues = {
+  emojiNames: Partial<EmojiNameRecord>;
+  customRegexes: Partial<CustomRegexes>;
+  userShortcuts: UserShortcuts;
+  sheetsRangeFormat: LinkFormat;
 };
 
 let cachedEmojiNames: Partial<EmojiNameRecord> = {};
@@ -29,10 +37,16 @@ let cachedSheetsRangeFormat: LinkFormat = "htmlWithEmoji";
  * @returns Nothing.
  */
 export const refreshSettingsCache = async () => {
-  cachedEmojiNames = await GM.getValue("emojiNames", {});
-  cachedCustomRegexes = await GM.getValue("customRegexes", {});
-  cachedUserShortcuts = await GM.getValue("userShortcuts", {});
-  const storedFormat = await GM.getValue("sheetsRangeFormat", "htmlWithEmoji");
+  const [emojiNames, customRegexes, userShortcuts, storedFormat] =
+    await Promise.all([
+      GM.getValue<SettingsValues["emojiNames"]>("emojiNames", {}),
+      GM.getValue<SettingsValues["customRegexes"]>("customRegexes", {}),
+      GM.getValue<UserShortcuts>("userShortcuts", {}),
+      GM.getValue<unknown>("sheetsRangeFormat", "htmlWithEmoji"),
+    ]);
+  cachedEmojiNames = emojiNames;
+  cachedCustomRegexes = customRegexes;
+  cachedUserShortcuts = userShortcuts;
   cachedSheetsRangeFormat = isSheetsRangeFormat(storedFormat)
     ? storedFormat
     : "htmlWithEmoji";
@@ -48,46 +62,22 @@ export const getShortcutForCommand = (
 ): ShortcutDefinition | undefined => cachedUserShortcuts[commandKey];
 
 /**
- * Replace custom regexes, including clearing entries omitted by an import.
+ * Save a settings batch and update the cache only after every write succeeds.
  *
- * @param customRegexes Validated replacement regexes.
+ * @param values Validated settings to replace.
  */
-export const updateCustomRegexes = async (
-  customRegexes: Partial<CustomRegexes>,
-) => {
-  await GM.setValue("customRegexes", customRegexes);
-  cachedCustomRegexes = customRegexes;
-};
-
-/**
- * Replace emoji overrides so omitted PR status values can inherit the common emoji.
- *
- * @param emojiNames Normalized emoji overrides.
- * @returns Nothing.
- */
-export const updateEmojiNames = async (
-  emojiNames: Partial<EmojiNameRecord>,
-) => {
-  await GM.setValue("emojiNames", emojiNames);
-  cachedEmojiNames = emojiNames;
-};
-
-/**
- * Update one command shortcut and persist it to storage.
- *
- * @param commandKey Command identifier.
- * @param shortcut Shortcut definition.
- * @returns Nothing.
- */
-export const updateShortcut = async (
-  commandKey: string,
-  shortcut: ShortcutDefinition,
-) => {
-  cachedUserShortcuts[commandKey] = shortcut;
-  await GM.setValue("userShortcuts", cachedUserShortcuts);
-};
-
-export const updateSheetsRangeFormat = async (format: LinkFormat) => {
-  cachedSheetsRangeFormat = format;
-  await GM.setValue("sheetsRangeFormat", format);
+export const updateSettings = async (values: Partial<SettingsValues>) => {
+  await saveStoredSettings(values);
+  if (values.emojiNames !== undefined) {
+    cachedEmojiNames = values.emojiNames;
+  }
+  if (values.customRegexes !== undefined) {
+    cachedCustomRegexes = values.customRegexes;
+  }
+  if (values.userShortcuts !== undefined) {
+    cachedUserShortcuts = values.userShortcuts;
+  }
+  if (values.sheetsRangeFormat !== undefined) {
+    cachedSheetsRangeFormat = values.sheetsRangeFormat;
+  }
 };

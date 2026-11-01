@@ -19,6 +19,10 @@ export const i18nMessages = {
       "URLを正規表現で指定すると、お好みのWebサイトで指定した絵文字をコピーします。",
     saveSettings: "保存",
     settingsSaved: "設定を保存しました",
+    settingsSaveFailure:
+      "設定の保存に失敗しました。設定は変更されていません。もう一度お試しください。",
+    settingsRestoreFailure:
+      "設定の保存と復元に失敗しました。保存済みの設定を確認してください。",
     settingsButton: "設定",
     importExportSettings: "設定のインポート・エクスポート",
     importExportDescription:
@@ -82,6 +86,10 @@ export const i18nMessages = {
       "Add custom websites to use emojis. You can use regular expressions to match URLs.",
     saveSettings: "Save",
     settingsSaved: "Settings saved",
+    settingsSaveFailure:
+      "Failed to save settings. Your settings are unchanged. Please try again.",
+    settingsRestoreFailure:
+      "Failed to save and restore settings. Please check your saved settings.",
     settingsButton: "Settings",
     importExportSettings: "Import and export settings",
     importExportDescription: "Share emoji names and custom regexes as JSON.",
@@ -142,6 +150,8 @@ export const i18nMessages = {
       "使用正则表达式指定URL，以便在您喜欢的网站上复制表情符号。",
     saveSettings: "保存",
     settingsSaved: "设置已保存",
+    settingsSaveFailure: "设置保存失败。原有设置未更改，请重试。",
+    settingsRestoreFailure: "设置保存和恢复失败。请检查已保存的设置。",
     settingsButton: "设置",
     importExportSettings: "导入和导出设置",
     importExportDescription: "以 JSON 格式分享表情符号名称和自定义正则表达式。",
@@ -216,3 +226,14 @@ export const getMessage = (
     message,
   );
 };
+
+/**
+ * Describe a storage failure, distinguishing unsuccessful restoration.
+ *
+ * @param rollbackFailed Whether restoring the original settings failed.
+ * @returns Localized save failure message.
+ */
+export const getSettingsSaveFailureMessage = (
+  rollbackFailed: boolean,
+): string =>
+  getMessage(rollbackFailed ? "settingsRestoreFailure" : "settingsSaveFailure");
