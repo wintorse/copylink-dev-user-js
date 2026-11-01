@@ -3,6 +3,7 @@ import {
   DEFAULT_EMOJI_NAMES,
   GITHUB_PULL_REQUEST_STATUS_EMOJI_KEYS,
 } from "@copylink-dev/shared/constants";
+import { SettingsHostId, isMac } from "./constants";
 import {
   buildCustomRegexes,
   normalizeEmojiValue,
@@ -18,7 +19,6 @@ import type { Shortcut } from "./types";
 import { createSettingsTransferSection } from "./settings-ui-transfer";
 import { getMessage } from "./i18n";
 import { getShortcutKey } from "./shortcuts-utils";
-import { isMac } from "./constants";
 import settingsStyleText from "./settings-ui.css?raw";
 
 /** ID of the sheets range format dropdown. */
@@ -34,8 +34,6 @@ const sheetsRangeFormatOptions: Array<{
   { value: "plainUrl", labelKey: "sheetsRangeFormatPlainUrl" },
 ];
 
-/** Host element ID for the settings UI. */
-export const SettingsHostId = "copylink-dev-settings-host";
 /** Panel element ID for the settings UI. */
 export const SettingsPanelId = "copylink-dev-settings";
 
@@ -102,33 +100,15 @@ const isEditableTarget = (target: EventTarget | null): target is HTMLElement =>
   (target instanceof HTMLElement && target.isContentEditable);
 
 /**
- * Prevent site-level shortcut handlers (e.g. Google Sheets) from stealing
- * clipboard/edit shortcuts while the settings form is focused.
+ * Keep keyboard and paste events inside settings while preserving browser
+ * editing, navigation, and form behavior.
  *
  * @param shadow ShadowRoot hosting the settings UI.
  */
 const guardEditingShortcuts = (shadow: ShadowRoot) => {
-  shadow.addEventListener(
-    "keydown",
-    (event: Event) => {
-      if (!(event instanceof KeyboardEvent)) {
-        return;
-      }
-      const target = event.composedPath()[0] ?? event.target;
-      if (!isEditableTarget(target)) {
-        return;
-      }
-      const key = event.key.toLowerCase();
-      const isModifierPressed = event.metaKey || event.ctrlKey;
-      if (!isModifierPressed) {
-        return;
-      }
-      if (["v", "c", "x", "a", "z", "y"].includes(key)) {
-        event.stopPropagation();
-      }
-    },
-    true,
-  );
+  for (const type of ["keydown", "keypress", "keyup"]) {
+    shadow.addEventListener(type, (event) => event.stopPropagation());
+  }
 
   shadow.addEventListener(
     "paste",

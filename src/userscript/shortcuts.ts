@@ -9,6 +9,7 @@ import {
   syncFrameShortcuts,
 } from "./shortcuts-utils";
 import type { Command } from "@copylink-dev/types/types";
+import { SettingsHostId } from "./constants";
 import type { ShortcutMap } from "./types";
 import { isDescendantFrame } from "./frame-utils";
 import { refreshSettingsCache } from "./cache";
@@ -76,7 +77,11 @@ export const registerShortcuts = async (
   }
   const handler = (event: KeyboardEvent) => {
     // A frame's own userscript and its parent's iframe listener may both run.
-    if (event.defaultPrevented) {
+    const settingsHost = document.getElementById(SettingsHostId);
+    if (
+      event.defaultPrevented ||
+      (settingsHost !== null && event.composedPath().includes(settingsHost))
+    ) {
       return;
     }
     const match = Object.entries(effective).find(([, shortcut]) =>
