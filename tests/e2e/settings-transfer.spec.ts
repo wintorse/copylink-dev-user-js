@@ -609,12 +609,13 @@ for (const action of [
       await expect(panel.locator("#importMessage")).toBeEmpty();
       await expect(panel.locator(action.selector)).toBeEnabled();
 
-      // When: A link is copied without reopening the settings panel.
+      // When: A link is copied from the page while the settings panel stays open.
       const payload = await copyWithShortcut(
         page,
         `${shortcutModifier}+Shift+l`,
         `[${fixtureMarkdownTitle}](${page.url()})`,
         "リンクをクリップボードにコピーしました",
+        page.locator("#editor"),
       );
 
       // Then: Copying uses the original settings rather than the failed import.

@@ -626,3 +626,80 @@ test("editing shortcuts stay inside editable settings fields", async ({
     await page.evaluate(() => document.body.dataset.siteShortcutTriggered),
   ).toBeUndefined();
 });
+
+test("typing and editing in settings do not trigger page shortcuts", async ({
+  page,
+  shortcutModifier,
+}) => {
+  // Given: Settings are open and the page listens for bubbling keyboard events.
+  await gotoFixture(page);
+  await openSettings(page, `${shortcutModifier}+t`);
+  await page.evaluate(() => {
+    for (const type of ["keydown", "keypress", "keyup"]) {
+      document.addEventListener(type, () => {
+        document.body.dataset.siteKeyEvents = "received";
+      });
+      window.addEventListener(type, () => {
+        document.body.dataset.windowKeyEvents = "received";
+      });
+    }
+  });
+  const panel = page.locator("#copylink-dev-settings");
+  await panel.locator("#importButton").click();
+  const emoji = panel.locator("#github");
+  const regex = panel.locator("#customRegex1");
+  const textarea = panel.locator("#importTextarea");
+  await emoji.fill("");
+  await regex.fill("");
+
+  // When: Text is typed into each kind of editable settings field.
+  await emoji.pressSequentially("github");
+  await regex.pressSequentially("example");
+  await textarea.pressSequentially("test");
+
+  // Then: Text is entered normally without reaching the page's shortcuts.
+  await expect(emoji).toHaveValue("github");
+  await expect(regex).toHaveValue("example");
+  await expect(textarea).toHaveValue("test");
+  expect(
+    await page.evaluate(() => ({
+      document: document.body.dataset.siteKeyEvents,
+      window: document.body.dataset.windowKeyEvents,
+    })),
+  ).toEqual({ document: undefined, window: undefined });
+
+  // When: Text is selected, copied, and pasted between settings fields.
+  await emoji.press("ControlOrMeta+a");
+  await emoji.press("ControlOrMeta+c");
+  await textarea.press("ControlOrMeta+a");
+  await textarea.press("ControlOrMeta+v");
+
+  // Then: Native editing works without activating page shortcuts.
+  await expect(textarea).toHaveValue("github");
+  expect(
+    await page.evaluate(() => document.body.dataset.siteKeyEvents),
+  ).toBeUndefined();
+
+  // When: A copylink shortcut is pressed while editing a settings field.
+  await page.evaluate(() => navigator.clipboard.writeText("unchanged"));
+  await emoji.press(`${shortcutModifier}+t`);
+
+  // Then: The settings field keeps focus and the shortcut does not copy the page title.
+  await expect(emoji).toBeFocused();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "unchanged",
+  );
+
+  // When: The same text is entered outside the settings panel.
+  await page.locator("#editor").pressSequentially("g");
+
+  // Then: The page's normal keyboard listeners still receive the event.
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-site-key-events",
+    "received",
+  );
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-window-key-events",
+    "received",
+  );
+});
